@@ -26,6 +26,7 @@
     .history-item { margin-bottom:0.5rem; font-size:0.9rem; }
     .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1rem; }
     .grid .card { margin-bottom:0; }
+    .view-mode-select { width:auto; padding:0.2rem; margin-bottom:0; }
     #modal-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; }
     #modal { background:var(--card-bg); padding:0.5rem; border-radius:0.25rem; width:200px; box-shadow:0 2px 8px var(--card-shadow); }
   </style>
@@ -237,8 +238,10 @@
       if (!livros.length) { conteudo.innerHTML = '<p>Nenhum livro.</p>'; return; }
       conteudo.innerHTML = `
         <div style="margin-bottom:1rem;">
-          <button onclick="setViewMode('list')" class="${viewMode==='list'?'primary':''}">Lista</button>
-          <button onclick="setViewMode('grid')" class="${viewMode==='grid'?'primary':''}">Grade</button>
+          <select class="view-mode-select" onchange="setViewMode(this.value)">
+            <option value="list" ${viewMode==='list'?'selected':''}>Lista</option>
+            <option value="grid" ${viewMode==='grid'?'selected':''}>Grade</option>
+          </select>
         </div>
       `;
       const container = document.createElement('div');
