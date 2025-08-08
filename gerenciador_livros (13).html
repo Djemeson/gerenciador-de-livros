@@ -42,6 +42,7 @@
   <main>
     <header>
       <h1 id="tituloPagina">Dashboard</h1>
+      <span id="metaAnualPaginas"></span>
       <span>📅 <strong id="today"></strong></span>
     </header>
     <div id="conteudo"></div>
@@ -75,6 +76,7 @@
 
     function navegar(p) {
       document.getElementById('tituloPagina').textContent = p.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+      document.getElementById('metaAnualPaginas').textContent = '';
       conteudo.innerHTML = '';
       switch (p) {
         case 'dashboard': carregarDashboard(); break;
@@ -122,6 +124,10 @@
         if (h.date === hojeStr) daily += pages;
         if (h.date >= weekAgoStr && h.date <= hojeStr) weekly += pages;
       }));
+      const annualPagesRead = livros
+        .filter(b => metaAnnual.includes(b.id))
+        .reduce((sum, b) => sum + Math.min(b.lidas, b.paginas), 0);
+      document.getElementById('metaAnualPaginas').textContent = `${annualPagesRead} pág lidas`;
       const desafioId = localStorage.getItem('desafio') || desafios[0].id;
       const d = desafios.find(x => x.id === desafioId);
       const dm = d.pagesPerDay;
