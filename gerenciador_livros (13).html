@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Biblioteca Pessoal</title>
+  <style>
+    :root { --bg-color:#f0fdf4; --text-color:#333; --nav-bg:#22c55e; --card-bg:white; --card-shadow:rgba(0,0,0,0.06); --progress-bg:#e5e7eb; --progress-fill:#22c55e; }
+    [data-theme="dark"] { --bg-color:#111827; --text-color:#e5e7eb; --nav-bg:#1f2937; --card-bg:#1e293b; --card-shadow:rgba(0,0,0,0.4); --progress-bg:#374151; --progress-fill:#10b981; }
+    * { box-sizing:border-box; margin:0; padding:0; font-family:'Segoe UI',sans-serif; }
+    body { display:grid; grid-template-columns:240px 1fr; height:100vh; background:var(--bg-color); color:var(--text-color); }
+    nav { background:var(--nav-bg); padding:1rem; color:white; }
+    nav h2 { font-size:1.2rem; margin-bottom:1rem; }
+    nav button { width:100%; background:transparent; border:none; color:inherit; padding:0.5rem; text-align:left; cursor:pointer; border-radius:0.25rem; }
+    nav button:hover { background:rgba(255,255,255,0.2); }
+    main { padding:1rem; overflow-y:auto; }
+    header { display:flex; justify-content:space-between; align-items:center; background:var(--card-bg); padding:0.5rem 1rem; border-radius:0.5rem; box-shadow:0 2px 8px var(--card-shadow); margin-bottom:1rem; }
+    header h1 { font-size:1.2rem; }
+    .card { background:var(--card-bg); padding:1rem; border-radius:0.5rem; box-shadow:0 4px 12px var(--card-shadow); margin-bottom:1rem; cursor:default; }
+    .progress-bar { background:var(--progress-bg); height:8px; border-radius:4px; overflow:hidden; margin:0.25rem 0; }
+    .progress-fill { height:100%; background:var(--progress-fill); width:0%; }
+    .update-btn { background:#e0e0e0; color:var(--text-color); border:none; border-radius:0.25rem; padding:0.4rem 0.6rem; font-size:0.85rem; cursor:pointer; margin-top:0.5rem; width:150px; white-space:nowrap; text-align:center; }
+    input, select, button { padding:0.4rem; margin-bottom:0.5rem; width:100%; border:1px solid #ccc; border-radius:0.25rem; font-size:0.85rem; }
+    button.primary { background:#22c55e; color:white; border:none; font-weight:bold; cursor:pointer; }
+    button.primary:hover { background:#16a34a; }
+    .history-item { margin-bottom:0.5rem; font-size:0.9rem; }
+    #modal-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; }
+    #modal { background:var(--card-bg); padding:0.5rem; border-radius:0.25rem; width:200px; box-shadow:0 2px 8px var(--card-shadow); }
+  </style>
+</head>
+<body>
+  <nav>
+    <h2>📚 Biblioteca</h2>
+    <button onclick="navegar('dashboard')">Dashboard</button>
+    <button onclick="navegar('biblioteca')">Livros</button>
+    <button onclick="navegar('adicionar')">Adicionar</button>
+    <button onclick="navegar('relatorios')">Relatórios</button>
+    <button onclick="navegar('config')">Config</button>
+    <button onclick="navegar('meta_anual')">Meta Anual</button>
+    <button onclick="alternarTema()">Tema</button>
+  </nav>
+  <main>
+    <header>
+      <h1 id="tituloPagina">Dashboard</h1>
+      <span>📅 <strong id="today"></strong></span>
+    </header>
+    <div id="conteudo"></div>
+  </main>
+  <div id="modal-overlay" onclick="hideModal()">
+    <div id="modal" onclick="event.stopPropagation()">
+      <input type="date" id="modal-date" />
+      <select id="modal-type"><option value="pages">Páginas</option><option value="percent">%</option></select>
+      <input type="number" id="modal-value" placeholder="Valor" />
+      <button id="modal-save" class="primary">OK</button>
+      <button onclick="hideModal()" style="background:transparent;color:var(--text-color);padding:0.3rem;width:100%">X</button>
+    </div>
+  </div>
+  <script>
+    const desafios = [
+      { id:'bookmark_sprint', name:'Bookmark Sprint', description:'Ler 15 pág/dia', pagesPerDay:15 },
+      { id:'reading_marathon', name:'Reading Marathon', description:'Ler 30 pág/dia', pagesPerDay:30 },
+      { id:'weekend_warrior', name:'Weekend Warrior', description:'Ler 50 pág/dia', pagesPerDay:50 },
+      { id:'annual_challenge', name:'Desafio Anual', description:'Leia 20 livros até o final do ano!', pagesPerDay:17 }
+    ];
+    let livros = JSON.parse(localStorage.getItem('livros')) || [];
+    livros = livros.map(b => ({ ...b, history: b.history || [] }));
+    let metaAnnual = JSON.parse(localStorage.getItem('metaAnnual')) || [];
+    const conteudo = document.getElementById('conteudo');
+    document.getElementById('today').textContent = new Date().toLocaleDateString();
+    if (localStorage.getItem('tema')) document.documentElement.setAttribute('data-theme', localStorage.getItem('tema'));
+
+    function salvarLivros() { localStorage.setItem('livros', JSON.stringify(livros)); }
+    function salvarMeta() { localStorage.setItem('metaAnnual', JSON.stringify(metaAnnual)); }
+    function alternarTema() { const t = document.documentElement.getAttribute('data-theme'); const n = t === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', n); localStorage.setItem('tema', n); }
+
+    function navegar(p) {
+      document.getElementById('tituloPagina').textContent = p.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+      conteudo.innerHTML = '';
+      switch (p) {
+        case 'dashboard': carregarDashboard(); break;
+        case 'biblioteca': carregarBiblioteca(); break;
+        case 'adicionar': carregarFormulario(); break;
+        case 'relatorios': carregarRelatorios(); break;
+        case 'config': carregarConfiguracoes(); break;
+        case 'meta_anual': carregarMetaAnual(); break;
+      }
+    }
+
+    let currentEditId = null;
+    function showModal(id) {
+      currentEditId = id;
+      document.getElementById('modal-date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('modal-type').value = 'pages';
+      document.getElementById('modal-value').value = '';
+      document.getElementById('modal-overlay').style.display = 'flex';
+    }
+    function hideModal() { document.getElementById('modal-overlay').style.display = 'none'; currentEditId = null; }
+
+    document.getElementById('modal-save').addEventListener('click', () => {
+      const date = document.getElementById('modal-date').value;
+      const type = document.getElementById('modal-type').value;
+      const val = parseFloat(document.getElementById('modal-value').value);
+      const book = livros.find(b => b.id === currentEditId);
+      if (!date || isNaN(val)) return alert('Inválido');
+      const old = book.lidas;
+      const np = type === 'percent' ? Math.round(book.paginas * (val / 100)) : val;
+      const delta = np - old;
+      const pct = Math.round((np / book.paginas) * 100);
+      book.lidas = np;
+      book.history.push({ date, pages: np, percent: pct, delta, timestamp: Date.now() });
+      salvarLivros(); hideModal(); navegar('biblioteca');
+    });
+
+    function carregarDashboard() {
+      const hoje = new Date();
+      const hojeStr = hoje.toISOString().split('T')[0];
+      const weekAgo = new Date(hoje); weekAgo.setDate(hoje.getDate() - 6);
+      const weekAgoStr = weekAgo.toISOString().split('T')[0];
+      let daily = 0, weekly = 0;
+      livros.forEach(b => b.history.forEach(h => {
+        const pages = h.delta || 0;
+        if (h.date === hojeStr) daily += pages;
+        if (h.date >= weekAgoStr && h.date <= hojeStr) weekly += pages;
+      }));
+      const desafioId = localStorage.getItem('desafio') || desafios[0].id;
+      const d = desafios.find(x => x.id === desafioId);
+      const dm = d.pagesPerDay;
+      const wm = dm * 7;
+      const at = 20;
+      const ac = livros.filter(b => b.lidas >= b.paginas).length;
+      const dp = Math.min(100, Math.round(daily / dm * 100));
+      const wp = Math.min(100, Math.round(weekly / wm * 100));
+      const ap = Math.min(100, Math.round(ac / at * 100));
+      let html = `
+        <div class="card">
+          <h2>Progresso Geral</h2>
+          <p>Diário: ${daily}/${dm} pág (${dp}%)</p>
+          <div class="progress-bar"><div class="progress-fill" style="width:${dp}%"></div></div>
+          <p>Semanal: ${weekly}/${wm} pág (${wp}%)</p>
+          <div class="progress-bar"><div class="progress-fill" style="width:${wp}%"></div></div>
+          <p>Anual: ${ac}/${at} livros (${ap}%)</p>
+          <div class="progress-bar"><div class="progress-fill" style="width:${ap}%"></div></div>
+        </div>`;
+      if (d.id === 'annual_challenge') {
+        const trophy = ac >= at ? '🏆 Meta Anual Alcançada! 🏆' : '';
+        html += `
+          <div class="card">
+            ${trophy && `<div style="font-size:2rem;text-align:center">${trophy}</div>`}
+            <h2>${d.name}</h2>
+            <p>${d.description}</p>
+            <div class="progress-bar"><div class="progress-fill" style="width:${ap}%"></div></div>
+            <p>${ac} de ${at} livros (${ap}%)</p>
+          </div>
+          <div class="card">
+            <h2>Resumo</h2>
+            <p><strong>Concluídos:</strong> ${ac} livros</p>
+            <p><strong>Meta anual:</strong> ${at} livros</p>
+            <p><strong>Restante:</strong> ${Math.max(0, at - ac)} livros</p>
+          </div>`;
+      } else {
+        const tp = livros.reduce((a,b) => a + b.lidas, 0);
+        const rem = Math.max(0, d.pagesPerDay - tp);
+        const pct = Math.min(100, Math.round(tp / d.pagesPerDay * 100));
+        const trophy = pct >= 100 ? '🏆 Desafio Concluído! 🏆' : '';
+        html += `
+          <div class="card">
+            ${trophy && `<div style="font-size:2rem;text-align:center">${trophy}</div>`}
+            <h2>${d.name}</h2>
+            <p>${d.description}</p>
+            <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+            <p>${pct}% meta</p>
+          </div>
+          <div class="card">
+            <h2>Resumo</h2>
+            <p>Total: ${tp} pág</p>
+            <p>Meta diária: ${d.pagesPerDay} pág</p>
+            <p>Restante: ${rem} pág</p>
+          </div>`;
+      }
+      const reading = livros.filter(b => b.lidas > 0 && b.lidas < b.paginas);
+      if (reading.length) {
+        html += `
+          <div class="card">
+            <h2>Em leitura</h2>
+            <ul>
+              ${reading.map(b => `<li>${b.titulo} (${b.lidas}/${b.paginas} pág)</li>`).join('')}
+            </ul>
+          </div>`;
+      }
+      conteudo.innerHTML = html;
+    }
+
+    function carregarMetaAnual() {
+      let html = `<div class="card">
+        <h2>Meta Anual</h2>
+        <p>Selecione os livros:</p>
+        <form>
+          ${livros.map(b => `
+            <label>
+              <input type="checkbox" value="${b.id}" ${metaAnnual.includes(b.id) ? 'checked' : ''} onchange="toggleMeta(${b.id}, this.checked)"> ${b.titulo}
+            </label>
+          `).join('')}
+        </form>`;
+      const selected = livros.filter(b => metaAnnual.includes(b.id));
+      const remaining = selected.reduce((sum, b) => sum + Math.max(0, b.paginas - b.lidas), 0);
+      const today = new Date();
+      const endYear = new Date(today.getFullYear(), 11, 31);
+      const msPerDay = 1000*60*60*24;
+      const daysLeft = Math.ceil((endYear - today)/msPerDay) + 1;
+      const perDay = daysLeft>0 ? Math.ceil(remaining/daysLeft) : remaining;
+      html += `
+        <p><strong>Páginas restantes:</strong> ${remaining}</p>
+        <p><strong>Dias até 31/12:</strong> ${daysLeft}</p>
+        <p><strong>Páginas por dia:</strong> ${perDay}</p>
+        <button class="primary" onclick="navegar('dashboard')">Salvar</button>
+      </div>`;
+      conteudo.innerHTML = html;
+    }
+
+    function toggleMeta(id, checked) {
+      if (checked && !metaAnnual.includes(id)) metaAnnual.push(id);
+      if (!checked) metaAnnual = metaAnnual.filter(x => x !== id);
+      salvarMeta();
+    }
+
+    function carregarBiblioteca() {
+      if (!livros.length) { conteudo.innerHTML = '<p>Nenhum livro.</p>'; return; }
+      const pend = livros.filter(b => b.lidas < b.paginas);
+      const done = livros.filter(b => b.lidas >= b.paginas)
+        .sort((a,b) => b.history[b.history.length-1].timestamp - a.history[a.history.length-1].timestamp);
+      pend.concat(done).forEach(b => {
+        const pc = Math.round((b.lidas/b.paginas)*100);
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.onclick = () => mostrarHistorico(b.id);
+        div.innerHTML = `
+          <h3>${b.titulo}</h3>
+          <p>${b.lidas}/${b.paginas} (${pc}%)</p>
+          <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
+          <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">Atualizar progresso</button>
+        `;
+        conteudo.appendChild(div);
+      });
+    }
+
+    function mostrarHistorico(id) {
+      const book = livros.find(b => b.id === id);
+      let html = `
+        <div class="card">
+          <button onclick="navegar('biblioteca')" style="background:transparent;color:var(--text-color);border:none;margin-bottom:1rem">◀ Voltar</button>
+          <h2>Histórico: ${book.titulo}</h2>
+      `;
+      const sorted = book.history.slice().sort((a,b) => b.timestamp - a.timestamp);
+      if (!sorted.length) html += '<p>Nenhum progresso registrado.</p>';
+      else sorted.forEach(h => html += `<div class="history-item">${h.date}: ${h.pages} pág (${h.percent}%)</div>`);
+      html += `<button class="update-btn" onclick="showModal(${id});event.stopPropagation();">Atualizar progresso</button>
+        </div>`;
+      conteudo.innerHTML = html;
+    }
+
+    function carregarFormulario() {
+      conteudo.innerHTML = `
+        <div class="card">
+          <h2>Adicionar Livro</h2>
+          <input id="titulo" placeholder="Título" />
+          <input id="paginas" type="number" placeholder="Páginas" />
+          <input id="lidas" type="number" placeholder="Lidas" />
+          <button class="primary" onclick="adicionarLivro()">Salvar</button>
+        </div>`;
+    }
+
+    function carregarRelatorios() {
+      conteudo.innerHTML = `<div class="card"><h2>Relatórios</h2><p>Em breve</p></div>`;
+    }
+
+    function carregarConfiguracoes() {
+      const idSel = localStorage.getItem('desafio') || desafios[0].id;
+      const opts = desafios.map(d => `<option value="${d.id}"${d.id===idSel?' selected':''}>${d.name}</option>`).join('');
+      conteudo.innerHTML = `<div class="card">
+        <h2>Configurações</h2>
+        <select onchange="localStorage.setItem('desafio',this.value); navegar('dashboard')">
+          ${opts}
+        </select>
+      </div>`;
+    }
+
+    function adicionarLivro() {
+      const t = document.getElementById('titulo').value;
+      const pg = parseInt(document.getElementById('paginas').value);
+      const ld = parseInt(document.getElementById('lidas').value);
+      if (!t || !pg || isNaN(ld)) return alert('Preencha todos os campos!');
+      const book = { id: Date.now(), titulo: t, paginas: pg, lidas: ld, history: [] };
+      if (ld > 0) {
+        const date = new Date().toISOString().split('T')[0];
+        const pct  = Math.round((ld/pg)*100);
+        book.history.push({ date, pages: ld, percent: pct, delta: ld, timestamp: Date.now() });
+      }
+      livros.push(book);
+      salvarLivros();
+      navegar('biblioteca');
+    }
+
+    navegar('dashboard');
+  </script>
+</body>
+</html>
