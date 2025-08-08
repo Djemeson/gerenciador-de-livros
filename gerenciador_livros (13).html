@@ -237,7 +237,7 @@
     function carregarBiblioteca() {
       if (!livros.length) { conteudo.innerHTML = '<p>Nenhum livro.</p>'; return; }
       conteudo.innerHTML = `
-        <div style="margin-bottom:1rem;">
+        <div style="margin-bottom:1rem; display:flex; justify-content:flex-end;">
           <select class="view-mode-select" onchange="setViewMode(this.value)">
             <option value="list" ${viewMode==='list'?'selected':''}>Lista</option>
             <option value="grid" ${viewMode==='grid'?'selected':''}>Grade</option>
