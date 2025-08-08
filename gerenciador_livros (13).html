@@ -67,7 +67,7 @@
       { id:'annual_challenge', name:'Desafio Anual', description:'Leia 20 livros até o final do ano!', pagesPerDay:17 }
     ];
     let livros = JSON.parse(localStorage.getItem('livros')) || [];
-    livros = livros.map(b => ({ ...b, history: b.history || [] }));
+    livros = livros.map(b => ({ ...b, history: b.history || [], capa: b.capa || '' }));
     let metaAnnual = JSON.parse(localStorage.getItem('metaAnnual')) || [];
     let viewMode = localStorage.getItem('viewMode') || 'list';
     const conteudo = document.getElementById('conteudo');
@@ -259,6 +259,7 @@
         div.className = 'card';
         div.onclick = () => mostrarHistorico(b.id);
         div.innerHTML = `
+          ${b.capa ? '<img src="' + b.capa + '" alt="Capa de ' + b.titulo + '" style="width:100%;height:auto;margin-bottom:0.5rem;">' : ''}
           <h3>${b.titulo}</h3>
           <p>${b.lidas}/${b.paginas} (${pc}%)</p>
           <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
@@ -275,6 +276,7 @@
         <div class="card">
           <button onclick="navegar('biblioteca')" style="background:transparent;color:var(--text-color);border:none;margin-bottom:1rem">◀ Voltar</button>
           <h2>Histórico: ${book.titulo}</h2>
+          ${book.capa ? '<img src="' + book.capa + '" alt="Capa de ' + book.titulo + '" style="width:100%;height:auto;margin-bottom:1rem;">' : ''}
       `;
       const sorted = book.history.slice().sort((a,b) => b.timestamp - a.timestamp);
       if (!sorted.length) html += '<p>Nenhum progresso registrado.</p>';
@@ -291,6 +293,7 @@
           <input id="titulo" placeholder="Título" />
           <input id="paginas" type="number" placeholder="Páginas" />
           <input id="lidas" type="number" placeholder="Lidas" />
+          <input id="capa" placeholder="URL da Capa" />
           <button class="primary" onclick="adicionarLivro()">Salvar</button>
         </div>`;
     }
@@ -314,8 +317,9 @@
       const t = document.getElementById('titulo').value;
       const pg = parseInt(document.getElementById('paginas').value);
       const ld = parseInt(document.getElementById('lidas').value);
+      const cp = document.getElementById('capa').value;
       if (!t || !pg || isNaN(ld)) return alert('Preencha todos os campos!');
-      const book = { id: Date.now(), titulo: t, paginas: pg, lidas: ld, history: [] };
+      const book = { id: Date.now(), titulo: t, paginas: pg, lidas: ld, history: [], capa: cp };
       if (ld > 0) {
         const date = new Date().toISOString().split('T')[0];
         const pct  = Math.round((ld/pg)*100);
