@@ -20,7 +20,7 @@
     .progress-bar { background:var(--progress-bg); height:8px; border-radius:4px; overflow:hidden; margin:0.25rem 0; }
     .progress-fill { height:100%; background:var(--progress-fill); width:0%; }
     .update-btn { background:#e0e0e0; color:var(--text-color); border:none; border-radius:0.25rem; padding:0.4rem 0.6rem; font-size:0.85rem; cursor:pointer; margin-top:0.5rem; width:150px; white-space:nowrap; text-align:center; }
-    input, select, button { padding:0.4rem; margin-bottom:0.5rem; width:100%; border:1px solid #ccc; border-radius:0.25rem; font-size:0.85rem; }
+    input, select, textarea, button { padding:0.4rem; margin-bottom:0.5rem; width:100%; border:1px solid #ccc; border-radius:0.25rem; font-size:0.85rem; }
     button.primary { background:#22c55e; color:white; border:none; font-weight:bold; cursor:pointer; }
     button.primary:hover { background:#16a34a; }
     .history-item { margin-bottom:0.5rem; font-size:0.9rem; }
@@ -37,9 +37,12 @@
     .cover-placeholder { width:100%; height:160px; background:rgba(0,0,0,0.2); color:#fff; display:flex; align-items:center; justify-content:center; border-radius:0.25rem; padding:0.25rem; text-align:center; margin-bottom:0.5rem; }
     .reading-card .progress-bar { width:100%; margin:0.25rem 0; }
     .reading-card .update-btn { width:100%; margin-top:0.25rem; }
-    .history-layout { display:flex; gap:1rem; align-items:flex-start; }
+    .history-layout { display:flex; gap:6rem; align-items:flex-start; }
     .history-layout img { width:120px; height:180px; object-fit:cover; border-radius:0.25rem; }
-    .history-details { flex:1; }
+    .history-info { display:flex; gap:1rem; align-items:flex-start; }
+    .history-details { margin-top:0; }
+    .history-synopsis { flex:1; }
+    .history-reading { margin-top:1rem; }
     .view-mode-select { width:auto; padding:0.2rem; margin-bottom:0; }
     #modal-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; }
     #modal { background:var(--card-bg); padding:0.5rem; border-radius:0.25rem; width:200px; box-shadow:0 2px 8px var(--card-shadow); }
@@ -131,7 +134,7 @@
       { id:'annual_challenge', name:'Desafio Anual', description:'Leia 20 livros até o final do ano!', pagesPerDay:17 }
     ];
     let livros = JSON.parse(localStorage.getItem('livros')) || [];
-    livros = livros.map(b => ({ ...b, history: b.history || [] }));
+    livros = livros.map(b => ({ ...b, history: b.history || [], resumo: b.resumo || '' }));
     let metaAnnual = JSON.parse(localStorage.getItem('metaAnnual')) || [];
     let metaAnnualCount = parseInt(localStorage.getItem('metaAnnualCount')) || metaAnnual.length;
     let selectingSlot = null;
@@ -563,19 +566,30 @@
         <div class="card">
           <button onclick="navegar('${back}')" style="background:transparent;color:var(--text-color);border:none;margin-bottom:1rem">◀ Voltar</button>
           <div class="history-layout">
-            ${cover}
-            <div class="history-details">
-              <h2>Histórico: ${book.titulo}</h2>
-              ${book.tipo ? `<p><strong>Tipo:</strong> ${book.tipo}</p>` : ''}
-      `;
+            <div class="history-info">
+              ${cover}
+              <div class="history-details">
+                <h2>${book.titulo}</h2>
+                ${book.autor ? `<p><strong>Autor:</strong> ${book.autor}</p>` : ''}
+                ${book.editora ? `<p><strong>Editora:</strong> ${book.editora}</p>` : ''}
+                ${book.isbn ? `<p><strong>ISBN:</strong> ${book.isbn}</p>` : ''}
+                ${book.tipo ? `<p><strong>Tipo:</strong> ${book.tipo}</p>` : ''}
+              </div>
+            </div>
+            <div class="history-synopsis">
+              <h3>Sinopse</h3>
+              <p>${book.resumo || 'Sem sinopse.'}</p>
+            </div>
+          </div>
+          <div class="history-reading">
+            <h3>Histórico de leitura</h3>`;
       const sorted = book.history.slice().sort((a,b) => b.timestamp - a.timestamp);
       if (!sorted.length) html += '<p>Nenhum progresso registrado.</p>';
       else sorted.forEach(h => html += `<div class="history-item">${h.date}: ${h.pages} pág (${h.percent}%)</div>`);
-      html += `<button class="update-btn" onclick="showModal(${id});event.stopPropagation();">Atualizar progresso</button>`;
-      html += `<button class="update-btn" onclick="editarCapa(${id});event.stopPropagation();">${book.capa ? 'Editar capa' : 'Adicionar capa'}</button>`;
-      html += `<button class="update-btn" onclick="event.stopPropagation();editarTipo(${id}, '${back}');">${book.tipo ? 'Editar tipo' : 'Adicionar tipo'}</button>`;
       html += `
-            </div>
+            <button class="update-btn" onclick="showModal(${id});event.stopPropagation();">Atualizar progresso</button>
+            <button class="update-btn" onclick="editarCapa(${id});event.stopPropagation();">${book.capa ? 'Editar capa' : 'Adicionar capa'}</button>
+            <button class="update-btn" onclick="event.stopPropagation();editarTipo(${id}, '${back}');">${book.tipo ? 'Editar tipo' : 'Adicionar tipo'}</button>
           </div>
         </div>`;
       conteudo.innerHTML = html;
@@ -585,7 +599,12 @@
       conteudo.innerHTML = `
         <div class="card">
           <h2>Adicionar Livro</h2>
+          <input id="isbn" placeholder="ISBN" />
+          <button class="update-btn" onclick="buscarISBN()">Buscar</button>
           <input id="titulo" placeholder="Título" />
+          <input id="autor" placeholder="Autor" />
+          <input id="editora" placeholder="Editora" />
+          <textarea id="resumo" placeholder="Resumo"></textarea>
           <input id="capa" placeholder="URL da capa" />
           <input id="paginas" type="number" placeholder="Páginas" />
           <input id="lidas" type="number" placeholder="Lidas" />
@@ -597,6 +616,25 @@
           </select>
           <button class="primary" onclick="adicionarLivro()">Salvar</button>
         </div>`;
+    }
+
+    async function buscarISBN() {
+      const isbn = document.getElementById('isbn').value.trim();
+      if (!isbn) { alert('Informe o ISBN'); return; }
+      try {
+        const resp = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+        const data = await resp.json();
+        if (!data.items || data.totalItems === 0) { alert('Livro não encontrado'); return; }
+        const info = data.items[0].volumeInfo;
+        document.getElementById('titulo').value = info.title || '';
+        document.getElementById('autor').value = info.authors ? info.authors.join(', ') : '';
+        document.getElementById('editora').value = info.publisher || '';
+        document.getElementById('resumo').value = info.description || '';
+        document.getElementById('capa').value = (info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail)) || '';
+        document.getElementById('paginas').value = info.pageCount || '';
+      } catch (e) {
+        alert('Erro ao buscar ISBN');
+      }
     }
 
     function carregarRelatorios() {
@@ -628,7 +666,11 @@
     }
 
     function adicionarLivro() {
+      const isbn = document.getElementById('isbn').value;
       const t = document.getElementById('titulo').value;
+      const a = document.getElementById('autor').value;
+      const e = document.getElementById('editora').value;
+      const r = document.getElementById('resumo').value;
       const c = document.getElementById('capa').value;
       const pg = parseInt(document.getElementById('paginas').value);
       const ld = parseInt(document.getElementById('lidas').value);
@@ -638,7 +680,7 @@
       let status = 'quero_ler', year = cy, completedYear = null;
       if (ld >= pg) { status = 'lido'; completedYear = cy; }
       else if (ld > 0) { status = 'lendo'; }
-      const book = { id: Date.now(), titulo: t, paginas: pg, lidas: ld, capa: c, tipo: tp, history: [], status, year, completedYear };
+      const book = { id: Date.now(), titulo: t, autor: a, editora: e, resumo: r, isbn, paginas: pg, lidas: ld, capa: c, tipo: tp, history: [], status, year, completedYear };
       if (ld > 0) {
         const date = new Date().toISOString().split('T')[0];
         const pct  = Math.round((ld/pg)*100);
