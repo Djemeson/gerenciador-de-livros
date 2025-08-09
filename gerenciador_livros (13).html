@@ -24,9 +24,19 @@
     button.primary { background:#22c55e; color:white; border:none; font-weight:bold; cursor:pointer; }
     button.primary:hover { background:#16a34a; }
     .history-item { margin-bottom:0.5rem; font-size:0.9rem; }
-    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1rem; }
+    .grid { display:grid; gap:1rem; }
+    .grid.small { grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); }
+    .grid.medium { grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); }
+    .grid.large { grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); }
     .grid .card { margin-bottom:0; }
     .card img { width:100%; object-fit:cover; margin-bottom:0.5rem; border-radius:0.25rem; }
+    .grid.small .card img, .grid.small .cover-placeholder { height:120px; }
+    .grid.medium .card img, .grid.medium .cover-placeholder { height:140px; }
+    .grid.large .card img, .grid.large .cover-placeholder { height:160px; }
+    .view-size { display:flex; gap:0.25rem; }
+    .view-size button { background:transparent; border:none; cursor:pointer; padding:0.2rem; border-radius:0.25rem; }
+    .view-size button.active { background:var(--progress-bg); }
+    .view-size svg { width:16px; height:16px; fill:var(--text-color); }
     .card.list { display:flex; align-items:center; gap:0.5rem; }
     .card.list img { width:50px; height:75px; margin-bottom:0; }
     .card.list .details { flex:1; }
@@ -139,6 +149,7 @@
     let metaAnnualCount = parseInt(localStorage.getItem('metaAnnualCount')) || metaAnnual.length;
     let selectingSlot = null;
     let viewMode = localStorage.getItem('viewMode') || 'list';
+    let gridSize = localStorage.getItem('gridSize') || 'large';
     const conteudo = document.getElementById('conteudo');
     document.getElementById('today').textContent = new Date().toLocaleDateString();
     let currentDate = new Date().toISOString().split('T')[0];
@@ -176,7 +187,42 @@
       localStorage.setItem('metaAnnualCount', metaAnnualCount);
     }
     function alternarTema() { const t = document.documentElement.getAttribute('data-theme'); const n = t === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', n); localStorage.setItem('tema', n); }
-    function setViewMode(m) { viewMode = m; localStorage.setItem('viewMode', m); renderBooks(); }
+    function setViewMode(m) { viewMode = m; localStorage.setItem('viewMode', m); renderSizeIcons(); renderBooks(); }
+    function setGridSize(s) { gridSize = s; localStorage.setItem('gridSize', s); renderSizeIcons(); renderBooks(); }
+    function renderSizeIcons() {
+      const div = document.getElementById('sizeOptions');
+      if (!div) return;
+      if (viewMode !== 'grid') { div.innerHTML = ''; return; }
+      div.className = 'view-size';
+      div.innerHTML = `
+        <button class="${gridSize==='small'?'active':''}" onclick="setGridSize('small')">
+          <svg viewBox="0 0 24 24">
+            <rect x="2" y="2" width="6" height="6"/>
+            <rect x="9" y="2" width="6" height="6"/>
+            <rect x="16" y="2" width="6" height="6"/>
+            <rect x="2" y="9" width="6" height="6"/>
+            <rect x="9" y="9" width="6" height="6"/>
+            <rect x="16" y="9" width="6" height="6"/>
+            <rect x="2" y="16" width="6" height="6"/>
+            <rect x="9" y="16" width="6" height="6"/>
+            <rect x="16" y="16" width="6" height="6"/>
+          </svg>
+        </button>
+        <button class="${gridSize==='medium'?'active':''}" onclick="setGridSize('medium')">
+          <svg viewBox="0 0 24 24">
+            <rect x="2" y="2" width="10" height="10"/>
+            <rect x="12" y="2" width="10" height="10"/>
+            <rect x="2" y="12" width="10" height="10"/>
+            <rect x="12" y="12" width="10" height="10"/>
+          </svg>
+        </button>
+        <button class="${gridSize==='large'?'active':''}" onclick="setGridSize('large')">
+          <svg viewBox="0 0 24 24">
+            <rect x="2" y="2" width="20" height="20"/>
+          </svg>
+        </button>
+      `;
+    }
 
     function navegar(p) {
       document.getElementById('tituloPagina').textContent = p.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -469,11 +515,15 @@
       top.style = 'margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center;';
       top.innerHTML = `
         <select id="yearSelect" class="year-select" onchange="changeYear(this.value)"></select>
-        <select class="view-mode-select" onchange="setViewMode(this.value)">
-          <option value="list" ${viewMode==='list'?'selected':''}>Lista</option>
-          <option value="grid" ${viewMode==='grid'?'selected':''}>Grade</option>
-        </select>`;
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <select class="view-mode-select" onchange="setViewMode(this.value)">
+            <option value="list" ${viewMode==='list'?'selected':''}>Lista</option>
+            <option value="grid" ${viewMode==='grid'?'selected':''}>Grade</option>
+          </select>
+          <div id="sizeOptions"></div>
+        </div>`;
       conteudo.appendChild(top);
+      renderSizeIcons();
       const tabsDiv = document.createElement('div');
       tabsDiv.id = 'tabsContainer';
       conteudo.appendChild(tabsDiv);
@@ -520,7 +570,7 @@
       const container = document.getElementById('booksContainer');
       if (!container) return;
       container.innerHTML = '';
-      if (viewMode === 'grid') container.className = 'grid'; else container.className = '';
+      if (viewMode === 'grid') container.className = 'grid ' + gridSize; else container.className = '';
       let list = [];
       const cy = new Date().getFullYear();
       if (selectedYear === 'all') {
