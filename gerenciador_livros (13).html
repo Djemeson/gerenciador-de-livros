@@ -530,25 +530,14 @@
       }
       if (!list.length) { container.innerHTML = '<p>Nenhum livro.</p>'; return; }
       list.forEach(b => {
-        const pc = Math.round((b.lidas/b.paginas)*100);
         const div = document.createElement('div');
         div.className = 'card';
-        if (viewMode === 'list') div.classList.add('list');
+        div.style.padding = '0';
         div.onclick = () => mostrarHistorico(b.id);
-        const cover = b.capa ? `<img src="${b.capa}" alt="Capa de ${b.titulo}">` : '';
-        const tipo = b.tipo
-          ? `<p>Tipo: ${b.tipo}</p>`
-          : `<button class="update-btn" onclick="event.stopPropagation();editarTipo(${b.id});">Definir tipo</button>`;
-        div.innerHTML = `
-          ${cover}
-          <div class="details">
-            <h3>${b.titulo}</h3>
-            <p>${b.lidas}/${b.paginas} (${pc}%)</p>
-            <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
-            ${tipo}
-            <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">Atualizar progresso</button>
-          </div>
-        `;
+        const cover = b.capa
+          ? `<img src="${b.capa}" alt="Capa de ${b.titulo}" style="margin-bottom:0;">`
+          : `<div class="cover-placeholder">${b.titulo}</div>`;
+        div.innerHTML = cover;
         container.appendChild(div);
       });
     }
