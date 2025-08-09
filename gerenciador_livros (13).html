@@ -57,6 +57,8 @@
     #slot-view { font-size:1rem; margin-bottom:0.8rem; }
     #slot-remove { position:absolute; bottom:0.5rem; right:0.5rem; font-size:0.8rem; }
     #slot-options button:hover { opacity:0.7; }
+    #type-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; }
+    #type-editor { background:var(--card-bg); padding:0.5rem; border-radius:0.25rem; width:200px; box-shadow:0 2px 8px var(--card-shadow); }
     .goal-count { display:flex; align-items:center; gap:0.5rem; }
     .goal-count input { width:60px; margin:0; }
     .year-select { width:auto; margin-right:0.5rem; }
@@ -105,6 +107,18 @@
       <button id="slot-remove" title="Remover">🗑️</button>
     </div>
   </div>
+  <div id="type-overlay" onclick="closeTypeEditor()">
+    <div id="type-editor" onclick="event.stopPropagation()">
+      <select id="type-select">
+        <option value="" disabled selected>Tipo</option>
+        <option value="Físico">Físico</option>
+        <option value="E-book">E-book</option>
+        <option value="Audiobook">Audiobook</option>
+      </select>
+      <button class="primary" onclick="saveType()">Salvar</button>
+      <button onclick="closeTypeEditor()" style="background:transparent;color:var(--text-color);padding:0.3rem;width:100%">X</button>
+    </div>
+  </div>
   <script>
     const desafios = [
       { id:'bookmark_sprint', name:'Bookmark Sprint', description:'Ler 15 pág/dia', pagesPerDay:15 },
@@ -124,6 +138,8 @@
     document.getElementById('book-search').addEventListener('input', e => renderBookList(e.target.value));
     let selectedYear = new Date().getFullYear();
     let selectedTab = 'lendo';
+    let editingTypeId = null;
+    let typeBack = 'biblioteca';
 
     function salvarLivros() { localStorage.setItem('livros', JSON.stringify(livros)); }
     function migrateBooksForNewYear() {
@@ -511,7 +527,7 @@
       else sorted.forEach(h => html += `<div class="history-item">${h.date}: ${h.pages} pág (${h.percent}%)</div>`);
       html += `<button class="update-btn" onclick="showModal(${id});event.stopPropagation();">Atualizar progresso</button>`;
       html += `<button class="update-btn" onclick="editarCapa(${id});event.stopPropagation();">${book.capa ? 'Editar capa' : 'Adicionar capa'}</button>`;
-      html += `<button class="update-btn" onclick="editarTipo(${id});event.stopPropagation();">${book.tipo ? 'Editar tipo' : 'Adicionar tipo'}</button>`;
+      html += `<button class="update-btn" onclick="event.stopPropagation();editarTipo(${id}, '${back}');">${book.tipo ? 'Editar tipo' : 'Adicionar tipo'}</button>`;
       html += `
             </div>
           </div>
@@ -597,16 +613,30 @@
       }
     }
 
-    function editarTipo(id) {
+    function editarTipo(id, back = 'biblioteca') {
+      editingTypeId = id;
+      typeBack = back;
       const book = livros.find(b => b.id === id);
-      const tp = prompt('Tipo do livro (Físico, E-book, Audiobook)', book.tipo || '');
-      if (tp !== null) {
-        const tipos = ['Físico', 'E-book', 'Audiobook'];
-        if (!tipos.includes(tp)) { alert('Tipo inválido'); return; }
-        book.tipo = tp;
-        salvarLivros();
-        navegar('biblioteca');
-      }
+      const select = document.getElementById('type-select');
+      select.value = book.tipo || '';
+      document.getElementById('type-overlay').style.display = 'flex';
+    }
+
+    function saveType() {
+      const tp = document.getElementById('type-select').value;
+      if (!tp) { alert('Selecione um tipo'); return; }
+      const book = livros.find(b => b.id === editingTypeId);
+      book.tipo = tp;
+      salvarLivros();
+      closeTypeEditor();
+      navegar(typeBack);
+    }
+
+    function closeTypeEditor() {
+      document.getElementById('type-overlay').style.display = 'none';
+      document.getElementById('type-select').value = '';
+      editingTypeId = null;
+      typeBack = 'biblioteca';
     }
 
     navegar('dashboard');
