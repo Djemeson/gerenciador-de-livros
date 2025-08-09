@@ -120,8 +120,17 @@
     let viewMode = localStorage.getItem('viewMode') || 'list';
     const conteudo = document.getElementById('conteudo');
     document.getElementById('today').textContent = new Date().toLocaleDateString();
+    let currentDate = new Date().toISOString().split('T')[0];
     if (localStorage.getItem('tema')) document.documentElement.setAttribute('data-theme', localStorage.getItem('tema'));
     document.getElementById('book-search').addEventListener('input', e => renderBookList(e.target.value));
+    setInterval(() => {
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (todayStr !== currentDate) {
+        currentDate = todayStr;
+        document.getElementById('today').textContent = new Date().toLocaleDateString();
+        if (document.getElementById('tituloPagina').textContent === 'Dashboard') carregarDashboard();
+      }
+    }, 60 * 1000);
     let selectedYear = new Date().getFullYear();
     let selectedTab = 'lendo';
 
