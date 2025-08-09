@@ -39,7 +39,10 @@
     .reading-card .update-btn { width:100%; margin-top:0.25rem; }
     .history-layout { display:flex; gap:1rem; align-items:flex-start; }
     .history-layout img { width:120px; height:180px; object-fit:cover; border-radius:0.25rem; }
-    .history-details { flex:1; }
+    .history-details { margin-top:0.5rem; }
+    .history-info { display:flex; flex-direction:column; align-items:flex-start; }
+    .history-synopsis { flex:1; }
+    .history-reading { margin-top:1rem; }
     .view-mode-select { width:auto; padding:0.2rem; margin-bottom:0; }
     #modal-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; }
     #modal { background:var(--card-bg); padding:0.5rem; border-radius:0.25rem; width:200px; box-shadow:0 2px 8px var(--card-shadow); }
@@ -563,23 +566,30 @@
         <div class="card">
           <button onclick="navegar('${back}')" style="background:transparent;color:var(--text-color);border:none;margin-bottom:1rem">◀ Voltar</button>
           <div class="history-layout">
-            ${cover}
-            <div class="history-details">
-              <h2>Histórico: ${book.titulo}</h2>
-              ${book.autor ? `<p><strong>Autor:</strong> ${book.autor}</p>` : ''}
-              ${book.editora ? `<p><strong>Editora:</strong> ${book.editora}</p>` : ''}
-              ${book.isbn ? `<p><strong>ISBN:</strong> ${book.isbn}</p>` : ''}
-              ${book.tipo ? `<p><strong>Tipo:</strong> ${book.tipo}</p>` : ''}
-              ${book.resumo ? `<p><strong>Resumo:</strong> ${book.resumo}</p>` : ''}
-      `;
+            <div class="history-info">
+              ${cover}
+              <div class="history-details">
+                <h2>${book.titulo}</h2>
+                ${book.autor ? `<p><strong>Autor:</strong> ${book.autor}</p>` : ''}
+                ${book.editora ? `<p><strong>Editora:</strong> ${book.editora}</p>` : ''}
+                ${book.isbn ? `<p><strong>ISBN:</strong> ${book.isbn}</p>` : ''}
+                ${book.tipo ? `<p><strong>Tipo:</strong> ${book.tipo}</p>` : ''}
+              </div>
+            </div>
+            <div class="history-synopsis">
+              <h3>Sinopse</h3>
+              <p>${book.resumo || 'Sem sinopse.'}</p>
+            </div>
+          </div>
+          <div class="history-reading">
+            <h3>Histórico de leitura</h3>`;
       const sorted = book.history.slice().sort((a,b) => b.timestamp - a.timestamp);
       if (!sorted.length) html += '<p>Nenhum progresso registrado.</p>';
       else sorted.forEach(h => html += `<div class="history-item">${h.date}: ${h.pages} pág (${h.percent}%)</div>`);
-      html += `<button class="update-btn" onclick="showModal(${id});event.stopPropagation();">Atualizar progresso</button>`;
-      html += `<button class="update-btn" onclick="editarCapa(${id});event.stopPropagation();">${book.capa ? 'Editar capa' : 'Adicionar capa'}</button>`;
-      html += `<button class="update-btn" onclick="event.stopPropagation();editarTipo(${id}, '${back}');">${book.tipo ? 'Editar tipo' : 'Adicionar tipo'}</button>`;
       html += `
-            </div>
+            <button class="update-btn" onclick="showModal(${id});event.stopPropagation();">Atualizar progresso</button>
+            <button class="update-btn" onclick="editarCapa(${id});event.stopPropagation();">${book.capa ? 'Editar capa' : 'Adicionar capa'}</button>
+            <button class="update-btn" onclick="event.stopPropagation();editarTipo(${id}, '${back}');">${book.tipo ? 'Editar tipo' : 'Adicionar tipo'}</button>
           </div>
         </div>`;
       conteudo.innerHTML = html;
