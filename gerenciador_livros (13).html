@@ -30,10 +30,11 @@
     .card.list { display:flex; align-items:center; gap:0.5rem; }
     .card.list img { width:50px; height:75px; margin-bottom:0; }
     .card.list .details { flex:1; }
+    .card.list .cover-placeholder { width:50px; height:75px; margin-bottom:0; }
     .reading-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:0.5rem; }
     .reading-card { display:flex; flex-direction:column; align-items:center; text-align:center; cursor:pointer; }
     .reading-card img { width:100%; height:160px; object-fit:cover; border-radius:0.25rem; }
-    .cover-placeholder { width:100%; height:160px; background:rgba(0,0,0,0.2); color:#fff; display:flex; align-items:center; justify-content:center; border-radius:0.25rem; padding:0.25rem; text-align:center; }
+    .cover-placeholder { width:100%; height:160px; background:rgba(0,0,0,0.2); color:#fff; display:flex; align-items:center; justify-content:center; border-radius:0.25rem; padding:0.25rem; text-align:center; margin-bottom:0.5rem; }
     .reading-card .progress-bar { width:100%; margin:0.25rem 0; }
     .reading-card .update-btn { width:100%; margin-top:0.25rem; }
     .history-layout { display:flex; gap:1rem; align-items:flex-start; }
@@ -535,14 +536,15 @@
         div.className = 'card';
         if (viewMode === 'list') div.classList.add('list');
         div.onclick = () => mostrarHistorico(b.id);
-        const cover = b.capa ? `<img src="${b.capa}" alt="Capa de ${b.titulo}">` : '';
+        const cover = b.capa
+          ? `<img src="${b.capa}" alt="Capa de ${b.titulo}">`
+          : `<div class="cover-placeholder">${b.titulo}</div>`;
         const tipo = b.tipo
           ? `<p>Tipo: ${b.tipo}</p>`
           : `<button class="update-btn" onclick="event.stopPropagation();editarTipo(${b.id});">Definir tipo</button>`;
         div.innerHTML = `
           ${cover}
           <div class="details">
-            <h3>${b.titulo}</h3>
             <p>${b.lidas}/${b.paginas} (${pc}%)</p>
             <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
             ${tipo}
