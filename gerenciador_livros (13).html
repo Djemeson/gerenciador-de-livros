@@ -48,8 +48,9 @@
     #modal { background:var(--card-bg); padding:0.5rem; border-radius:0.25rem; width:200px; box-shadow:0 2px 8px var(--card-shadow); }
     .goal-slots { display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:1rem; }
     .goal-slot { width:60px; height:80px; background:rgba(0,0,0,0.2); color:#fff; display:flex; align-items:center; justify-content:center; border-radius:0.25rem; cursor:pointer; font-size:1.5rem; }
-    .goal-slot.filled { background:var(--card-bg); color:var(--text-color); font-size:0.7rem; padding:0.25rem; text-align:center; }
+    .goal-slot.filled { background:var(--card-bg); color:var(--text-color); font-size:0.7rem; padding:0.25rem; text-align:center; position:relative; }
     .goal-slot.filled img { width:100%; height:100%; object-fit:cover; border-radius:0.25rem; }
+    .goal-slot .bookmark-icon { position:absolute; top:0; left:0; width:16px; height:24px; background:#22c55e; clip-path:polygon(0 0,100% 0,100% 80%,50% 100%,0 80%); pointer-events:none; }
     #book-select-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; }
     #book-select { background:var(--card-bg); padding:1rem; border-radius:0.25rem; width:300px; max-height:80vh; overflow-y:auto; box-shadow:0 2px 8px var(--card-shadow); }
     #book-select input { margin-bottom:0.5rem; }
@@ -388,11 +389,12 @@
         if (id) {
           const book = livros.find(b => b.id === id);
           slot.className = 'goal-slot filled';
+          const marker = book && book.status === 'lido' ? '<span class="bookmark-icon"></span>' : '';
           if (book && book.capa) {
-            slot.innerHTML = `<img src="${book.capa}" alt="${book.titulo}">`;
+            slot.innerHTML = `<img src="${book.capa}" alt="${book.titulo}">${marker}`;
             slot.style.padding = '0';
           } else {
-            slot.textContent = book ? book.titulo : '';
+            slot.innerHTML = `${marker}${book ? book.titulo : ''}`;
             slot.style.padding = '';
           }
           slot.onclick = () => openSlotOptions(i);
