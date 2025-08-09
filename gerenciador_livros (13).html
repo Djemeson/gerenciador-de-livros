@@ -32,6 +32,7 @@
     .goal-slots { display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:1rem; }
     .goal-slot { width:60px; height:80px; background:rgba(0,0,0,0.2); color:#fff; display:flex; align-items:center; justify-content:center; border-radius:0.25rem; cursor:pointer; font-size:1.5rem; }
     .goal-slot.filled { background:var(--card-bg); color:var(--text-color); font-size:0.7rem; padding:0.25rem; text-align:center; }
+    .goal-slot.filled img { width:100%; height:100%; object-fit:cover; border-radius:0.25rem; }
     #book-select-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; }
     #book-select { background:var(--card-bg); padding:1rem; border-radius:0.25rem; width:300px; max-height:80vh; overflow-y:auto; box-shadow:0 2px 8px var(--card-shadow); }
     #book-select input { margin-bottom:0.5rem; }
@@ -246,21 +247,28 @@
       const container = document.getElementById('goalSlots');
       if (!container) return;
       container.innerHTML = '';
-      for (let i = 0; i < metaAnnualCount; i++) {
-        const slot = document.createElement('div');
-        const id = metaAnnual[i];
-        if (id) {
-          const book = livros.find(b => b.id === id);
-          slot.className = 'goal-slot filled';
-          slot.textContent = book ? book.titulo : '';
-        } else {
-          slot.className = 'goal-slot';
-          slot.textContent = '+';
+        for (let i = 0; i < metaAnnualCount; i++) {
+          const slot = document.createElement('div');
+          const id = metaAnnual[i];
+          if (id) {
+            const book = livros.find(b => b.id === id);
+            slot.className = 'goal-slot filled';
+            if (book && book.capa) {
+              slot.innerHTML = `<img src="${book.capa}" alt="${book.titulo}">`;
+              slot.style.padding = '0';
+            } else {
+              slot.textContent = book ? book.titulo : '';
+              slot.style.padding = '';
+            }
+          } else {
+            slot.className = 'goal-slot';
+            slot.textContent = '+';
+            slot.style.padding = '';
+          }
+          slot.onclick = () => openBookSelector(i);
+          container.appendChild(slot);
         }
-        slot.onclick = () => openBookSelector(i);
-        container.appendChild(slot);
       }
-    }
 
     function openBookSelector(i) {
       selectingSlot = i;
