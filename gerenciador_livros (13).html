@@ -415,7 +415,9 @@
     }
 
     function renderBookList(term) {
-      const list = livros.filter(b => b.titulo.toLowerCase().includes(term.toLowerCase()));
+      const list = livros
+        .filter(b => b.titulo.toLowerCase().includes(term.toLowerCase()))
+        .filter(b => !metaAnnual.includes(b.id));
       document.getElementById('book-list').innerHTML = list.map(b => `<div class="book-option" onclick="chooseBook(${b.id})">${b.titulo}</div>`).join('');
     }
 
