@@ -29,6 +29,14 @@
     .view-mode-select { width:auto; padding:0.2rem; margin-bottom:0; }
     #modal-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; }
     #modal { background:var(--card-bg); padding:0.5rem; border-radius:0.25rem; width:200px; box-shadow:0 2px 8px var(--card-shadow); }
+    .goal-slots { display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:1rem; }
+    .goal-slot { width:60px; height:80px; background:rgba(0,0,0,0.2); color:#fff; display:flex; align-items:center; justify-content:center; border-radius:0.25rem; cursor:pointer; font-size:1.5rem; }
+    .goal-slot.filled { background:var(--card-bg); color:var(--text-color); font-size:0.7rem; padding:0.25rem; text-align:center; }
+    #book-select-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; }
+    #book-select { background:var(--card-bg); padding:1rem; border-radius:0.25rem; width:300px; max-height:80vh; overflow-y:auto; box-shadow:0 2px 8px var(--card-shadow); }
+    #book-select input { margin-bottom:0.5rem; }
+    .book-option { padding:0.3rem 0; cursor:pointer; }
+    .book-option:hover { background:var(--progress-bg); }
   </style>
 </head>
 <body>
@@ -59,6 +67,12 @@
       <button onclick="hideModal()" style="background:transparent;color:var(--text-color);padding:0.3rem;width:100%">X</button>
     </div>
   </div>
+  <div id="book-select-overlay" onclick="closeBookSelector()">
+    <div id="book-select" onclick="event.stopPropagation()">
+      <input type="text" id="book-search" placeholder="Buscar" />
+      <div id="book-list"></div>
+    </div>
+  </div>
   <script>
     const desafios = [
       { id:'bookmark_sprint', name:'Bookmark Sprint', description:'Ler 15 pág/dia', pagesPerDay:15 },
@@ -69,13 +83,19 @@
     let livros = JSON.parse(localStorage.getItem('livros')) || [];
     livros = livros.map(b => ({ ...b, history: b.history || [] }));
     let metaAnnual = JSON.parse(localStorage.getItem('metaAnnual')) || [];
+    let metaAnnualCount = parseInt(localStorage.getItem('metaAnnualCount')) || metaAnnual.length;
+    let selectingSlot = null;
     let viewMode = localStorage.getItem('viewMode') || 'list';
     const conteudo = document.getElementById('conteudo');
     document.getElementById('today').textContent = new Date().toLocaleDateString();
     if (localStorage.getItem('tema')) document.documentElement.setAttribute('data-theme', localStorage.getItem('tema'));
+    document.getElementById('book-search').addEventListener('input', e => renderBookList(e.target.value));
 
     function salvarLivros() { localStorage.setItem('livros', JSON.stringify(livros)); }
-    function salvarMeta() { localStorage.setItem('metaAnnual', JSON.stringify(metaAnnual)); }
+    function salvarMeta() {
+      localStorage.setItem('metaAnnual', JSON.stringify(metaAnnual));
+      localStorage.setItem('metaAnnualCount', metaAnnualCount);
+    }
     function alternarTema() { const t = document.documentElement.getAttribute('data-theme'); const n = t === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', n); localStorage.setItem('tema', n); }
     function setViewMode(m) { viewMode = m; localStorage.setItem('viewMode', m); carregarBiblioteca(); }
 
@@ -208,34 +228,67 @@
     function carregarMetaAnual() {
       let html = `<div class="card">
         <h2>Meta Anual</h2>
-        <p>Selecione os livros:</p>
-        <form>
-          ${livros.map(b => `
-            <label>
-              <input type="checkbox" value="${b.id}" ${metaAnnual.includes(b.id) ? 'checked' : ''} onchange="toggleMeta(${b.id}, this.checked)"> ${b.titulo}
-            </label>
-          `).join('')}
-        </form>`;
-      const selected = livros.filter(b => metaAnnual.includes(b.id));
-      const remaining = selected.reduce((sum, b) => sum + Math.max(0, b.paginas - b.lidas), 0);
-      const today = new Date();
-      const endYear = new Date(today.getFullYear(), 11, 31);
-      const msPerDay = 1000*60*60*24;
-      const daysLeft = Math.ceil((endYear - today)/msPerDay) + 1;
-      const perDay = daysLeft>0 ? Math.ceil(remaining/daysLeft) : remaining;
-      html += `
-        <p><strong>Páginas restantes:</strong> ${remaining}</p>
-        <p><strong>Dias até 31/12:</strong> ${daysLeft}</p>
-        <p><strong>Páginas por dia:</strong> ${perDay}</p>
-        <button class="primary" onclick="navegar('dashboard')">Salvar</button>
+        <label>Quantidade de livros:</label>
+        <input type="number" id="goalCount" min="0" value="${metaAnnualCount}" />
+        <div id="goalSlots" class="goal-slots"></div>
       </div>`;
       conteudo.innerHTML = html;
+      document.getElementById('goalCount').addEventListener('change', e => {
+        metaAnnualCount = parseInt(e.target.value) || 0;
+        if (metaAnnual.length > metaAnnualCount) metaAnnual = metaAnnual.slice(0, metaAnnualCount);
+        salvarMeta();
+        renderGoalSlots();
+      });
+      renderGoalSlots();
     }
 
-    function toggleMeta(id, checked) {
-      if (checked && !metaAnnual.includes(id)) metaAnnual.push(id);
-      if (!checked) metaAnnual = metaAnnual.filter(x => x !== id);
+    function renderGoalSlots() {
+      const container = document.getElementById('goalSlots');
+      if (!container) return;
+      container.innerHTML = '';
+      for (let i = 0; i < metaAnnualCount; i++) {
+        const slot = document.createElement('div');
+        const id = metaAnnual[i];
+        if (id) {
+          const book = livros.find(b => b.id === id);
+          slot.className = 'goal-slot filled';
+          slot.textContent = book ? book.titulo : '';
+        } else {
+          slot.className = 'goal-slot';
+          slot.textContent = '+';
+        }
+        slot.onclick = () => openBookSelector(i);
+        container.appendChild(slot);
+      }
+    }
+
+    function openBookSelector(i) {
+      selectingSlot = i;
+      document.getElementById('book-select-overlay').style.display = 'flex';
+      document.getElementById('book-search').value = '';
+      renderBookList('');
+    }
+
+    function closeBookSelector() {
+      document.getElementById('book-select-overlay').style.display = 'none';
+      selectingSlot = null;
+    }
+
+    function renderBookList(term) {
+      const list = livros.filter(b => b.titulo.toLowerCase().includes(term.toLowerCase()));
+      document.getElementById('book-list').innerHTML = list.map(b => `<div class="book-option" onclick="chooseBook(${b.id})">${b.titulo}</div>`).join('');
+    }
+
+    function chooseBook(id) {
+      if (selectingSlot === null) return;
+      if (metaAnnual.includes(id) && metaAnnual[selectingSlot] !== id) {
+        alert('Livro já selecionado');
+        return;
+      }
+      metaAnnual[selectingSlot] = id;
       salvarMeta();
+      renderGoalSlots();
+      closeBookSelector();
     }
 
     function carregarBiblioteca() {
