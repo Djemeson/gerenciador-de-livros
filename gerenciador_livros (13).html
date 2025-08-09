@@ -30,10 +30,12 @@
     .card.list { display:flex; align-items:center; gap:0.5rem; }
     .card.list img { width:50px; height:75px; margin-bottom:0; }
     .card.list .details { flex:1; }
-    .reading-item { display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem; }
-    .reading-item img { width:40px; height:60px; object-fit:cover; border-radius:0.25rem; }
-    .reading-item .info { flex:1; }
-    .reading-item .update-btn { margin-top:0; width:auto; }
+    .reading-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:0.5rem; }
+    .reading-card { display:flex; flex-direction:column; align-items:center; text-align:center; }
+    .reading-card img { width:100%; height:160px; object-fit:cover; border-radius:0.25rem; }
+    .reading-card strong { margin-top:0.25rem; font-size:0.9rem; }
+    .reading-card .progress-bar { width:100%; margin:0.25rem 0; }
+    .reading-card .update-btn { width:100%; margin-top:0.25rem; }
     .view-mode-select { width:auto; padding:0.2rem; margin-bottom:0; }
     #modal-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; }
     #modal { background:var(--card-bg); padding:0.5rem; border-radius:0.25rem; width:200px; box-shadow:0 2px 8px var(--card-shadow); }
@@ -241,13 +243,11 @@
           const pc = Math.round((b.lidas / b.paginas) * 100);
           const cover = b.capa ? `<img src="${b.capa}" alt="Capa de ${b.titulo}">` : '';
           return `
-            <div class="reading-item">
+            <div class="reading-card">
               ${cover}
-              <div class="info">
-                <strong>${b.titulo}</strong>
-                <div>${b.lidas}/${b.paginas} pág (${pc}%)</div>
-                <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
-              </div>
+              <strong>${b.titulo}</strong>
+              <div>${b.lidas}/${b.paginas} (${pc}%)</div>
+              <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
               <button class="update-btn" onclick="showModal(${b.id});">Atualizar</button>
             </div>
           `;
@@ -255,7 +255,9 @@
         html += `
           <div class="card">
             <h2>Em leitura</h2>
-            ${items}
+            <div class="reading-grid">
+              ${items}
+            </div>
           </div>`;
       }
       conteudo.innerHTML = html;
