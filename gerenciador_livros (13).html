@@ -57,6 +57,8 @@
     #slot-view { font-size:1rem; margin-bottom:0.8rem; }
     #slot-remove { position:absolute; bottom:0.5rem; right:0.5rem; font-size:0.8rem; }
     #slot-options button:hover { opacity:0.7; }
+    #type-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; }
+    #type-editor { background:var(--card-bg); padding:0.5rem; border-radius:0.25rem; width:200px; box-shadow:0 2px 8px var(--card-shadow); }
     .goal-count { display:flex; align-items:center; gap:0.5rem; }
     .goal-count input { width:60px; margin:0; }
     .year-select { width:auto; margin-right:0.5rem; }
@@ -108,6 +110,18 @@
       <button id="slot-remove" title="Remover">🗑️</button>
     </div>
   </div>
+  <div id="type-overlay" onclick="closeTypeEditor()">
+    <div id="type-editor" onclick="event.stopPropagation()">
+      <select id="type-select">
+        <option value="" disabled selected>Tipo</option>
+        <option value="Físico">Físico</option>
+        <option value="E-book">E-book</option>
+        <option value="Audiobook">Audiobook</option>
+      </select>
+      <button class="primary" onclick="saveType()">Salvar</button>
+      <button onclick="closeTypeEditor()" style="background:transparent;color:var(--text-color);padding:0.3rem;width:100%">X</button>
+    </div>
+  </div>
   <script>
     const desafios = [
       { id:'bookmark_sprint', name:'Bookmark Sprint', description:'Ler 15 pág/dia', pagesPerDay:15 },
@@ -136,6 +150,8 @@
     }, 60 * 1000);
     let selectedYear = new Date().getFullYear();
     let selectedTab = 'lendo';
+    let editingTypeId = null;
+    let typeBack = 'biblioteca';
 
     function salvarLivros() { localStorage.setItem('livros', JSON.stringify(livros)); }
     function migrateBooksForNewYear() {
@@ -311,8 +327,9 @@
             <div class=\"reading-card\" onclick=\"mostrarHistorico(${b.id},'dashboard')\">
               ${cover}
               <div>${b.lidas}/${b.paginas} (${pc}%)</div>
-              <div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width:${pc}%\"></div></div>
-              <button class=\"update-btn\" onclick=\"event.stopPropagation();showModal(${b.id});\">Atualizar</button>
+              ${b.tipo ? `<div>${b.tipo}</div>` : ''}
+              <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
+              <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">Atualizar</button>
             </div>
           `;
         }).join('');
@@ -517,12 +534,16 @@
         if (viewMode === 'list') div.classList.add('list');
         div.onclick = () => mostrarHistorico(b.id);
         const cover = b.capa ? `<img src="${b.capa}" alt="Capa de ${b.titulo}">` : '';
+        const tipo = b.tipo
+          ? `<p>Tipo: ${b.tipo}</p>`
+          : `<button class="update-btn" onclick="event.stopPropagation();editarTipo(${b.id});">Definir tipo</button>`;
         div.innerHTML = `
           ${cover}
           <div class="details">
             <h3>${b.titulo}</h3>
             <p>${b.lidas}/${b.paginas} (${pc}%)</p>
             <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
+            ${tipo}
             <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">Atualizar progresso</button>
           </div>
         `;
@@ -541,12 +562,14 @@
             ${cover}
             <div class="history-details">
               <h2>Histórico: ${book.titulo}</h2>
+              ${book.tipo ? `<p><strong>Tipo:</strong> ${book.tipo}</p>` : ''}
       `;
       const sorted = book.history.slice().sort((a,b) => b.timestamp - a.timestamp);
       if (!sorted.length) html += '<p>Nenhum progresso registrado.</p>';
       else sorted.forEach(h => html += `<div class="history-item">${h.date}: ${h.pages} pág (${h.percent}%)</div>`);
       html += `<button class="update-btn" onclick="showModal(${id});event.stopPropagation();">Atualizar progresso</button>`;
       html += `<button class="update-btn" onclick="editarCapa(${id});event.stopPropagation();">${book.capa ? 'Editar capa' : 'Adicionar capa'}</button>`;
+      html += `<button class="update-btn" onclick="event.stopPropagation();editarTipo(${id}, '${back}');">${book.tipo ? 'Editar tipo' : 'Adicionar tipo'}</button>`;
       html += `
             </div>
           </div>
@@ -562,6 +585,12 @@
           <input id="capa" placeholder="URL da capa" />
           <input id="paginas" type="number" placeholder="Páginas" />
           <input id="lidas" type="number" placeholder="Lidas" />
+          <select id="tipo">
+            <option value="" disabled selected>Tipo</option>
+            <option value="Físico">Físico</option>
+            <option value="E-book">E-book</option>
+            <option value="Audiobook">Audiobook</option>
+          </select>
           <button class="primary" onclick="adicionarLivro()">Salvar</button>
         </div>`;
     }
@@ -599,12 +628,13 @@
       const c = document.getElementById('capa').value;
       const pg = parseInt(document.getElementById('paginas').value);
       const ld = parseInt(document.getElementById('lidas').value);
-      if (!t || !pg || isNaN(ld)) return alert('Preencha todos os campos!');
+      const tp = document.getElementById('tipo').value;
+      if (!t || !pg || isNaN(ld) || !tp) return alert('Preencha todos os campos!');
       const cy = new Date().getFullYear();
       let status = 'quero_ler', year = cy, completedYear = null;
       if (ld >= pg) { status = 'lido'; completedYear = cy; }
       else if (ld > 0) { status = 'lendo'; }
-      const book = { id: Date.now(), titulo: t, paginas: pg, lidas: ld, capa: c, history: [], status, year, completedYear };
+      const book = { id: Date.now(), titulo: t, paginas: pg, lidas: ld, capa: c, tipo: tp, history: [], status, year, completedYear };
       if (ld > 0) {
         const date = new Date().toISOString().split('T')[0];
         const pct  = Math.round((ld/pg)*100);
@@ -623,6 +653,32 @@
         salvarLivros();
         navegar('biblioteca');
       }
+    }
+
+    function editarTipo(id, back = 'biblioteca') {
+      editingTypeId = id;
+      typeBack = back;
+      const book = livros.find(b => b.id === id);
+      const select = document.getElementById('type-select');
+      select.value = book.tipo || '';
+      document.getElementById('type-overlay').style.display = 'flex';
+    }
+
+    function saveType() {
+      const tp = document.getElementById('type-select').value;
+      if (!tp) { alert('Selecione um tipo'); return; }
+      const book = livros.find(b => b.id === editingTypeId);
+      book.tipo = tp;
+      salvarLivros();
+      closeTypeEditor();
+      navegar(typeBack);
+    }
+
+    function closeTypeEditor() {
+      document.getElementById('type-overlay').style.display = 'none';
+      document.getElementById('type-select').value = '';
+      editingTypeId = null;
+      typeBack = 'biblioteca';
     }
 
     navegar('dashboard');
