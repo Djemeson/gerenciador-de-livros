@@ -482,7 +482,6 @@
             <p>${b.lidas}/${b.paginas} (${pc}%)</p>
             <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
             <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">Atualizar progresso</button>
-            <button class="update-btn" onclick="event.stopPropagation();editarCapa(${b.id});">${b.capa ? 'Editar capa' : 'Adicionar capa'}</button>
           </div>
         `;
         container.appendChild(div);
