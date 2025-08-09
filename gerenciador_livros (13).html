@@ -162,6 +162,10 @@
     let typeBack = 'biblioteca';
 
     function salvarLivros() { localStorage.setItem('livros', JSON.stringify(livros)); }
+    function formatDate(dateStr) {
+      const [year, month, day] = dateStr.split('-');
+      return `${day}/${month}/${year.slice(2)}`;
+    }
     function migrateBooksForNewYear() {
       const cy = new Date().getFullYear();
       livros.forEach(b => {
@@ -551,7 +555,7 @@
         const cover = b.capa
           ? `<img src="${b.capa}" alt="Capa de ${b.titulo}">`
           : `<div class="cover-placeholder">${b.titulo}</div>`;
-        const start = b.startDate ? `<p>Início: ${b.startDate}</p>` : '';
+        const start = b.startDate ? `<p>Início: ${formatDate(b.startDate)}</p>` : '';
         const tipo = b.tipo
           ? `<p>Tipo: ${b.tipo}</p>`
           : `<button class="update-btn" onclick="event.stopPropagation();editarTipo(${b.id});">Definir tipo</button>`;
@@ -560,8 +564,8 @@
           <div class="details">
             <p>${b.lidas}/${b.paginas} (${pc}%)</p>
             <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
-            ${start}
             ${tipo}
+            ${start}
             <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">Atualizar progresso</button>
           </div>
         `;
