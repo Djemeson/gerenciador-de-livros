@@ -536,7 +536,20 @@
         <select onchange="localStorage.setItem('desafio',this.value); navegar('dashboard')">
           ${opts}
         </select>
+        <button class="primary" onclick="reiniciarBaseDados()">Reiniciar base de Dados</button>
       </div>`;
+    }
+
+    function reiniciarBaseDados() {
+      if (confirm('Deseja realmente apagar todos os dados?')) {
+        localStorage.clear();
+        livros = [];
+        metaAnnual = [];
+        metaAnnualCount = 0;
+        viewMode = 'list';
+        document.documentElement.setAttribute('data-theme', 'light');
+        navegar('dashboard');
+      }
     }
 
     function adicionarLivro() {
