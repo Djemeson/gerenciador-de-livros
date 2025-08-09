@@ -476,7 +476,9 @@
         if (viewMode === 'list') div.classList.add('list');
         div.onclick = () => mostrarHistorico(b.id);
         const cover = b.capa ? `<img src="${b.capa}" alt="Capa de ${b.titulo}">` : '';
-        const tipo = b.tipo ? `<p>Tipo: ${b.tipo}</p>` : '';
+        const tipo = b.tipo
+          ? `<p>Tipo: ${b.tipo}</p>`
+          : `<button class="update-btn" onclick="event.stopPropagation();editarTipo(${b.id});">Definir tipo</button>`;
         div.innerHTML = `
           ${cover}
           <div class="details">
@@ -509,6 +511,7 @@
       else sorted.forEach(h => html += `<div class="history-item">${h.date}: ${h.pages} pág (${h.percent}%)</div>`);
       html += `<button class="update-btn" onclick="showModal(${id});event.stopPropagation();">Atualizar progresso</button>`;
       html += `<button class="update-btn" onclick="editarCapa(${id});event.stopPropagation();">${book.capa ? 'Editar capa' : 'Adicionar capa'}</button>`;
+      html += `<button class="update-btn" onclick="editarTipo(${id});event.stopPropagation();">${book.tipo ? 'Editar tipo' : 'Adicionar tipo'}</button>`;
       html += `
             </div>
           </div>
@@ -589,6 +592,18 @@
       const url = prompt('URL da capa', book.capa || '');
       if (url !== null) {
         book.capa = url.trim();
+        salvarLivros();
+        navegar('biblioteca');
+      }
+    }
+
+    function editarTipo(id) {
+      const book = livros.find(b => b.id === id);
+      const tp = prompt('Tipo do livro (Físico, E-book, Audiobook)', book.tipo || '');
+      if (tp !== null) {
+        const tipos = ['Físico', 'E-book', 'Audiobook'];
+        if (!tipos.includes(tp)) { alert('Tipo inválido'); return; }
+        book.tipo = tp;
         salvarLivros();
         navegar('biblioteca');
       }
