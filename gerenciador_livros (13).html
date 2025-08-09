@@ -424,7 +424,7 @@
       const sel = document.getElementById('yearSelect');
       const cy = new Date().getFullYear();
       let opts = '<option value="all">Todos</option>';
-      for (let y = 2020; y <= cy; y++) {
+      for (let y = cy; y >= 2020; y--) {
         opts += `<option value="${y}" ${selectedYear===y?'selected':''}>${y}</option>`;
       }
       sel.innerHTML = opts;
