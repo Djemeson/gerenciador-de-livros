@@ -144,7 +144,12 @@
       { id:'annual_challenge', name:'Desafio Anual', description:'Leia 20 livros até o final do ano!', pagesPerDay:17 }
     ];
     let livros = JSON.parse(localStorage.getItem('livros')) || [];
-    livros = livros.map(b => ({ ...b, history: b.history || [], resumo: b.resumo || '' }));
+    livros = livros.map(b => {
+      const history = b.history || [];
+      const startDate = b.startDate || (history.length ? history[0].date : null);
+      const endDate = b.endDate || (b.status === 'lido' && history.length ? history[history.length - 1].date : null);
+      return { ...b, history, resumo: b.resumo || '', startDate, endDate };
+    });
     let metaAnnual = JSON.parse(localStorage.getItem('metaAnnual')) || [];
     let metaAnnualCount = parseInt(localStorage.getItem('metaAnnualCount')) || metaAnnual.length;
     let selectingSlot = null;
@@ -169,6 +174,10 @@
     let typeBack = 'biblioteca';
 
     function salvarLivros() { localStorage.setItem('livros', JSON.stringify(livros)); }
+    function formatDate(dateStr) {
+      const [year, month, day] = dateStr.split('-');
+      return `${day}/${month}/${year.slice(2)}`;
+    }
     function migrateBooksForNewYear() {
       const cy = new Date().getFullYear();
       livros.forEach(b => {
@@ -269,17 +278,25 @@
       const delta = np - old;
       const pct = Math.round((np / book.paginas) * 100);
       book.lidas = Math.min(np, book.paginas);
+      if (book.lidas > 0 && !book.startDate) {
+        book.startDate = date;
+      } else if (book.lidas === 0) {
+        book.startDate = null;
+      }
       book.history.push({ date, pages: book.lidas, percent: pct, delta, timestamp: Date.now() });
       if (book.lidas >= book.paginas) {
         book.status = 'lido';
         book.completedYear = new Date().getFullYear();
         book.lidas = book.paginas;
+        book.endDate = book.endDate || date;
       } else if (book.lidas > 0) {
         book.status = 'lendo';
         book.year = new Date().getFullYear();
+        book.endDate = null;
       } else {
         book.status = 'quero_ler';
         book.year = new Date().getFullYear();
+        book.endDate = null;
       }
       salvarLivros(); hideModal(); navegar('biblioteca');
     }
@@ -592,6 +609,8 @@
         const cover = b.capa
           ? `<img src="${b.capa}" alt="Capa de ${b.titulo}">`
           : `<div class="cover-placeholder">${b.titulo}</div>`;
+        const start = b.startDate ? `<p>Início: ${formatDate(b.startDate)}</p>` : '';
+        const end = b.endDate ? `<p>Fim: ${formatDate(b.endDate)}</p>` : '';
         const tipo = b.tipo
           ? `<p>Tipo: ${b.tipo}</p>`
           : `<button class="update-btn" onclick="event.stopPropagation();editarTipo(${b.id});">Definir tipo</button>`;
@@ -601,6 +620,8 @@
             <p>${b.lidas}/${b.paginas} (${pc}%)</p>
             <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
             ${tipo}
+            ${start}
+            ${end}
             <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">Atualizar progresso</button>
           </div>
         `;
@@ -624,6 +645,8 @@
                 ${book.editora ? `<p><strong>Editora:</strong> ${book.editora}</p>` : ''}
                 ${book.isbn ? `<p><strong>ISBN:</strong> ${book.isbn}</p>` : ''}
                 ${book.tipo ? `<p><strong>Tipo:</strong> ${book.tipo}</p>` : ''}
+                ${book.startDate ? `<p><strong>Início:</strong> ${formatDate(book.startDate)}</p>` : ''}
+                ${book.endDate ? `<p><strong>Fim:</strong> ${formatDate(book.endDate)}</p>` : ''}
               </div>
             </div>
             <div class="history-synopsis">
@@ -730,11 +753,13 @@
       let status = 'quero_ler', year = cy, completedYear = null;
       if (ld >= pg) { status = 'lido'; completedYear = cy; }
       else if (ld > 0) { status = 'lendo'; }
-      const book = { id: Date.now(), titulo: t, autor: a, editora: e, resumo: r, isbn, paginas: pg, lidas: ld, capa: c, tipo: tp, history: [], status, year, completedYear };
+      const book = { id: Date.now(), titulo: t, autor: a, editora: e, resumo: r, isbn, paginas: pg, lidas: ld, capa: c, tipo: tp, history: [], status, year, completedYear, startDate: null, endDate: null };
       if (ld > 0) {
         const date = new Date().toISOString().split('T')[0];
         const pct  = Math.round((ld/pg)*100);
         book.history.push({ date, pages: ld, percent: pct, delta: ld, timestamp: Date.now() });
+        book.startDate = date;
+        if (ld >= pg) book.endDate = date;
       }
       livros.push(book);
       salvarLivros();
