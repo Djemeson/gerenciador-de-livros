@@ -38,6 +38,10 @@
     #book-select input { margin-bottom:0.5rem; }
     .book-option { padding:0.3rem 0; cursor:pointer; }
     .book-option:hover { background:var(--progress-bg); }
+    #slot-options-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; }
+    #slot-options { background:var(--card-bg); padding:0.5rem; border-radius:0.25rem; box-shadow:0 2px 8px var(--card-shadow); display:flex; gap:0.5rem; }
+    #slot-options button { background:transparent; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-color); }
+    #slot-options button:hover { opacity:0.7; }
   </style>
 </head>
 <body>
@@ -72,6 +76,12 @@
     <div id="book-select" onclick="event.stopPropagation()">
       <input type="text" id="book-search" placeholder="Buscar" />
       <div id="book-list"></div>
+    </div>
+  </div>
+  <div id="slot-options-overlay" onclick="closeSlotOptions()">
+    <div id="slot-options" onclick="event.stopPropagation()">
+      <button id="slot-view" title="Exibir">👁️</button>
+      <button id="slot-remove" title="Remover">🗑️</button>
     </div>
   </div>
   <script>
@@ -247,28 +257,29 @@
       const container = document.getElementById('goalSlots');
       if (!container) return;
       container.innerHTML = '';
-        for (let i = 0; i < metaAnnualCount; i++) {
-          const slot = document.createElement('div');
-          const id = metaAnnual[i];
-          if (id) {
-            const book = livros.find(b => b.id === id);
-            slot.className = 'goal-slot filled';
-            if (book && book.capa) {
-              slot.innerHTML = `<img src="${book.capa}" alt="${book.titulo}">`;
-              slot.style.padding = '0';
-            } else {
-              slot.textContent = book ? book.titulo : '';
-              slot.style.padding = '';
-            }
+      for (let i = 0; i < metaAnnualCount; i++) {
+        const slot = document.createElement('div');
+        const id = metaAnnual[i];
+        if (id) {
+          const book = livros.find(b => b.id === id);
+          slot.className = 'goal-slot filled';
+          if (book && book.capa) {
+            slot.innerHTML = `<img src="${book.capa}" alt="${book.titulo}">`;
+            slot.style.padding = '0';
           } else {
-            slot.className = 'goal-slot';
-            slot.textContent = '+';
+            slot.textContent = book ? book.titulo : '';
             slot.style.padding = '';
           }
+          slot.onclick = () => openSlotOptions(i);
+        } else {
+          slot.className = 'goal-slot';
+          slot.textContent = '+';
+          slot.style.padding = '';
           slot.onclick = () => openBookSelector(i);
-          container.appendChild(slot);
         }
+        container.appendChild(slot);
       }
+    }
 
     function openBookSelector(i) {
       selectingSlot = i;
@@ -298,6 +309,31 @@
       renderGoalSlots();
       closeBookSelector();
     }
+
+    function openSlotOptions(i) {
+      selectingSlot = i;
+      document.getElementById('slot-options-overlay').style.display = 'flex';
+    }
+
+    function closeSlotOptions() {
+      document.getElementById('slot-options-overlay').style.display = 'none';
+      selectingSlot = null;
+    }
+
+    document.getElementById('slot-view').addEventListener('click', () => {
+      if (selectingSlot === null) return;
+      const id = metaAnnual[selectingSlot];
+      closeSlotOptions();
+      if (id) mostrarHistorico(id, 'meta_anual');
+    });
+
+    document.getElementById('slot-remove').addEventListener('click', () => {
+      if (selectingSlot === null) return;
+      metaAnnual[selectingSlot] = null;
+      salvarMeta();
+      renderGoalSlots();
+      closeSlotOptions();
+    });
 
     function carregarBiblioteca() {
       if (!livros.length) { conteudo.innerHTML = '<p>Nenhum livro.</p>'; return; }
@@ -330,11 +366,12 @@
       conteudo.appendChild(container);
     }
 
-    function mostrarHistorico(id) {
+    function mostrarHistorico(id, back='biblioteca') {
       const book = livros.find(b => b.id === id);
+      document.getElementById('tituloPagina').textContent = 'Histórico';
       let html = `
         <div class="card">
-          <button onclick="navegar('biblioteca')" style="background:transparent;color:var(--text-color);border:none;margin-bottom:1rem">◀ Voltar</button>
+          <button onclick="navegar('${back}')" style="background:transparent;color:var(--text-color);border:none;margin-bottom:1rem">◀ Voltar</button>
           <h2>Histórico: ${book.titulo}</h2>
       `;
       const sorted = book.history.slice().sort((a,b) => b.timestamp - a.timestamp);
