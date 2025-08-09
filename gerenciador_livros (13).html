@@ -30,6 +30,15 @@
     .card.list { display:flex; align-items:center; gap:0.5rem; }
     .card.list img { width:50px; height:75px; margin-bottom:0; }
     .card.list .details { flex:1; }
+    .reading-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:0.5rem; }
+    .reading-card { display:flex; flex-direction:column; align-items:center; text-align:center; cursor:pointer; }
+    .reading-card img { width:100%; height:160px; object-fit:cover; border-radius:0.25rem; }
+    .reading-card strong { margin-top:0.25rem; font-size:0.9rem; }
+    .reading-card .progress-bar { width:100%; margin:0.25rem 0; }
+    .reading-card .update-btn { width:100%; margin-top:0.25rem; }
+    .history-layout { display:flex; gap:1rem; align-items:flex-start; }
+    .history-layout img { width:120px; height:180px; object-fit:cover; border-radius:0.25rem; }
+    .history-details { flex:1; }
     .view-mode-select { width:auto; padding:0.2rem; margin-bottom:0; }
     #modal-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; }
     #modal { background:var(--card-bg); padding:0.5rem; border-radius:0.25rem; width:200px; box-shadow:0 2px 8px var(--card-shadow); }
@@ -233,12 +242,25 @@
       }
       const reading = livros.filter(b => b.lidas > 0 && b.lidas < b.paginas);
       if (reading.length) {
+        const items = reading.map(b => {
+          const pc = Math.round((b.lidas / b.paginas) * 100);
+          const cover = b.capa ? `<img src="${b.capa}" alt="Capa de ${b.titulo}">` : '';
+          return `
+            <div class="reading-card" onclick="mostrarHistorico(${b.id},'dashboard')">
+              ${cover}
+              <strong>${b.titulo}</strong>
+              <div>${b.lidas}/${b.paginas} (${pc}%)</div>
+              <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
+              <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">Atualizar</button>
+            </div>
+          `;
+        }).join('');
         html += `
           <div class="card">
             <h2>Em leitura</h2>
-            <ul>
-              ${reading.map(b => `<li>${b.titulo} (${b.lidas}/${b.paginas} pág)</li>`).join('')}
-            </ul>
+            <div class="reading-grid">
+              ${items}
+            </div>
           </div>`;
       }
       conteudo.innerHTML = html;
@@ -385,17 +407,24 @@
     function mostrarHistorico(id, back='biblioteca') {
       const book = livros.find(b => b.id === id);
       document.getElementById('tituloPagina').textContent = 'Histórico';
+      const cover = book.capa ? `<img src="${book.capa}" alt="Capa de ${book.titulo}">` : '';
       let html = `
         <div class="card">
           <button onclick="navegar('${back}')" style="background:transparent;color:var(--text-color);border:none;margin-bottom:1rem">◀ Voltar</button>
-          <h2>Histórico: ${book.titulo}</h2>
+          <div class="history-layout">
+            ${cover}
+            <div class="history-details">
+              <h2>Histórico: ${book.titulo}</h2>
       `;
       const sorted = book.history.slice().sort((a,b) => b.timestamp - a.timestamp);
       if (!sorted.length) html += '<p>Nenhum progresso registrado.</p>';
       else sorted.forEach(h => html += `<div class="history-item">${h.date}: ${h.pages} pág (${h.percent}%)</div>`);
       html += `<button class="update-btn" onclick="showModal(${id});event.stopPropagation();">Atualizar progresso</button>`;
       html += `<button class="update-btn" onclick="editarCapa(${id});event.stopPropagation();">${book.capa ? 'Editar capa' : 'Adicionar capa'}</button>`;
-      html += `</div>`;
+      html += `
+            </div>
+          </div>
+        </div>`;
       conteudo.innerHTML = html;
     }
 
