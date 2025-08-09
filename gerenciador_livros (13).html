@@ -564,7 +564,7 @@
       const cover = book.capa ? `<img src="${book.capa}" alt="Capa de ${book.titulo}">` : '';
       let html = `
         <div class="card">
-          <button onclick="navegar('${back}')" style="background:transparent;color:var(--text-color);border:none;margin-bottom:1rem">◀ Voltar</button>
+          <button onclick="navegar('${back}')" style="background:transparent;color:var(--text-color);border:none;margin-bottom:1rem;display:block;width:auto;padding:0;text-align:left">◀ Voltar</button>
           <div class="history-layout">
             <div class="history-info">
               ${cover}
