@@ -39,8 +39,10 @@
     .book-option { padding:0.3rem 0; cursor:pointer; }
     .book-option:hover { background:var(--progress-bg); }
     #slot-options-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; }
-    #slot-options { background:var(--card-bg); padding:0.5rem; border-radius:0.25rem; box-shadow:0 2px 8px var(--card-shadow); display:flex; gap:0.5rem; }
-    #slot-options button { background:transparent; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-color); }
+    #slot-options { background:var(--card-bg); padding:0.5rem; padding-bottom:1.2rem; border-radius:0.25rem; box-shadow:0 2px 8px var(--card-shadow); display:flex; flex-direction:column; align-items:flex-start; position:relative; }
+    #slot-options button { background:transparent; border:none; cursor:pointer; color:var(--text-color); }
+    #slot-view { font-size:1rem; margin-bottom:0.3rem; }
+    #slot-remove { position:absolute; bottom:0.2rem; right:0.2rem; font-size:0.8rem; }
     #slot-options button:hover { opacity:0.7; }
   </style>
 </head>
@@ -80,7 +82,7 @@
   </div>
   <div id="slot-options-overlay" onclick="closeSlotOptions()">
     <div id="slot-options" onclick="event.stopPropagation()">
-      <button id="slot-view" title="Exibir">👁️</button>
+      <button id="slot-view" title="Exibir">Exibir</button>
       <button id="slot-remove" title="Remover">🗑️</button>
     </div>
   </div>
