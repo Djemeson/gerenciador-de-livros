@@ -59,6 +59,10 @@
     #slot-options button:hover { opacity:0.7; }
     .goal-count { display:flex; align-items:center; gap:0.5rem; }
     .goal-count input { width:60px; margin:0; }
+    .year-select { width:auto; margin-right:0.5rem; }
+    .tabs { display:flex; gap:0.5rem; margin-bottom:1rem; }
+    .tab { padding:0.4rem 0.8rem; background:var(--progress-bg); border:none; border-radius:0.25rem 0.25rem 0 0; cursor:pointer; }
+    .tab.active { background:var(--nav-bg); color:#fff; }
   </style>
 </head>
 <body>
@@ -118,14 +122,29 @@
     document.getElementById('today').textContent = new Date().toLocaleDateString();
     if (localStorage.getItem('tema')) document.documentElement.setAttribute('data-theme', localStorage.getItem('tema'));
     document.getElementById('book-search').addEventListener('input', e => renderBookList(e.target.value));
+    let selectedYear = new Date().getFullYear();
+    let selectedTab = 'lendo';
 
     function salvarLivros() { localStorage.setItem('livros', JSON.stringify(livros)); }
+    function migrateBooksForNewYear() {
+      const cy = new Date().getFullYear();
+      livros.forEach(b => {
+        b.status = b.status || (b.lidas >= b.paginas ? 'lido' : (b.lidas > 0 ? 'lendo' : 'quero_ler'));
+        if (b.status === 'lido') {
+          b.completedYear = b.completedYear || cy;
+        } else {
+          if (!b.year || b.year < cy) b.year = cy;
+        }
+      });
+      salvarLivros();
+    }
+    migrateBooksForNewYear();
     function salvarMeta() {
       localStorage.setItem('metaAnnual', JSON.stringify(metaAnnual));
       localStorage.setItem('metaAnnualCount', metaAnnualCount);
     }
     function alternarTema() { const t = document.documentElement.getAttribute('data-theme'); const n = t === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', n); localStorage.setItem('tema', n); }
-    function setViewMode(m) { viewMode = m; localStorage.setItem('viewMode', m); carregarBiblioteca(); }
+    function setViewMode(m) { viewMode = m; localStorage.setItem('viewMode', m); renderBooks(); }
 
     function navegar(p) {
       document.getElementById('tituloPagina').textContent = p.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -161,8 +180,19 @@
       const np = type === 'percent' ? Math.round(book.paginas * (val / 100)) : val;
       const delta = np - old;
       const pct = Math.round((np / book.paginas) * 100);
-      book.lidas = np;
-      book.history.push({ date, pages: np, percent: pct, delta, timestamp: Date.now() });
+      book.lidas = Math.min(np, book.paginas);
+      book.history.push({ date, pages: book.lidas, percent: pct, delta, timestamp: Date.now() });
+      if (book.lidas >= book.paginas) {
+        book.status = 'lido';
+        book.completedYear = new Date().getFullYear();
+        book.lidas = book.paginas;
+      } else if (book.lidas > 0) {
+        book.status = 'lendo';
+        book.year = new Date().getFullYear();
+      } else {
+        book.status = 'quero_ler';
+        book.year = new Date().getFullYear();
+      }
       salvarLivros(); hideModal(); navegar('biblioteca');
     });
 
@@ -368,21 +398,77 @@
     });
 
     function carregarBiblioteca() {
+      conteudo.innerHTML = '';
       if (!livros.length) { conteudo.innerHTML = '<p>Nenhum livro.</p>'; return; }
-      conteudo.innerHTML = `
-        <div style="margin-bottom:1rem; display:flex; justify-content:flex-end;">
-          <select class="view-mode-select" onchange="setViewMode(this.value)">
-            <option value="list" ${viewMode==='list'?'selected':''}>Lista</option>
-            <option value="grid" ${viewMode==='grid'?'selected':''}>Grade</option>
-          </select>
-        </div>
+      const top = document.createElement('div');
+      top.style = 'margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center;';
+      top.innerHTML = `
+        <select id="yearSelect" class="year-select" onchange="changeYear(this.value)"></select>
+        <select class="view-mode-select" onchange="setViewMode(this.value)">
+          <option value="list" ${viewMode==='list'?'selected':''}>Lista</option>
+          <option value="grid" ${viewMode==='grid'?'selected':''}>Grade</option>
+        </select>`;
+      conteudo.appendChild(top);
+      const tabsDiv = document.createElement('div');
+      tabsDiv.id = 'tabsContainer';
+      conteudo.appendChild(tabsDiv);
+      const booksDiv = document.createElement('div');
+      booksDiv.id = 'booksContainer';
+      conteudo.appendChild(booksDiv);
+      populateYearSelect();
+      renderTabs();
+      renderBooks();
+    }
+
+    function populateYearSelect() {
+      const sel = document.getElementById('yearSelect');
+      const cy = new Date().getFullYear();
+      let opts = '<option value="all">Todos</option>';
+      for (let y = cy; y >= 2020; y--) {
+        opts += `<option value="${y}" ${selectedYear===y?'selected':''}>${y}</option>`;
+      }
+      sel.innerHTML = opts;
+    }
+
+    function changeYear(val) {
+      selectedYear = val === 'all' ? 'all' : parseInt(val);
+      if (selectedYear === new Date().getFullYear()) selectedTab = 'lendo';
+      renderTabs();
+      renderBooks();
+    }
+
+    function renderTabs() {
+      const cy = new Date().getFullYear();
+      const tabsDiv = document.getElementById('tabsContainer');
+      if (selectedYear !== cy) { tabsDiv.innerHTML = ''; return; }
+      tabsDiv.className = 'tabs';
+      tabsDiv.innerHTML = `
+        <button class="tab ${selectedTab==='lendo'?'active':''}" onclick="setTab('lendo')">Lendo</button>
+        <button class="tab ${selectedTab==='quero'?'active':''}" onclick="setTab('quero')">Quero ler</button>
+        <button class="tab ${selectedTab==='lido'?'active':''}" onclick="setTab('lido')">Lido</button>
       `;
-      const container = document.createElement('div');
-      if (viewMode === 'grid') container.className = 'grid';
-      const pend = livros.filter(b => b.lidas < b.paginas);
-      const done = livros.filter(b => b.lidas >= b.paginas)
-        .sort((a,b) => b.history[b.history.length-1].timestamp - a.history[a.history.length-1].timestamp);
-      pend.concat(done).forEach(b => {
+    }
+
+    function setTab(t) { selectedTab = t; renderTabs(); renderBooks(); }
+
+    function renderBooks() {
+      const container = document.getElementById('booksContainer');
+      if (!container) return;
+      container.innerHTML = '';
+      if (viewMode === 'grid') container.className = 'grid'; else container.className = '';
+      let list = [];
+      const cy = new Date().getFullYear();
+      if (selectedYear === 'all') {
+        list = livros.filter(b => b.status === 'lido');
+      } else if (selectedYear === cy) {
+        if (selectedTab === 'lendo') list = livros.filter(b => b.status==='lendo' && b.year===cy);
+        else if (selectedTab === 'quero') list = livros.filter(b => b.status==='quero_ler' && b.year===cy);
+        else list = livros.filter(b => b.status==='lido' && b.completedYear===cy);
+      } else {
+        list = livros.filter(b => b.status==='lido' && b.completedYear===selectedYear);
+      }
+      if (!list.length) { container.innerHTML = '<p>Nenhum livro.</p>'; return; }
+      list.forEach(b => {
         const pc = Math.round((b.lidas/b.paginas)*100);
         const div = document.createElement('div');
         div.className = 'card';
@@ -396,12 +482,10 @@
             <p>${b.lidas}/${b.paginas} (${pc}%)</p>
             <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
             <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">Atualizar progresso</button>
-            <button class="update-btn" onclick="event.stopPropagation();editarCapa(${b.id});">${b.capa ? 'Editar capa' : 'Adicionar capa'}</button>
           </div>
         `;
         container.appendChild(div);
       });
-      conteudo.appendChild(container);
     }
 
     function mostrarHistorico(id, back='biblioteca') {
@@ -461,7 +545,11 @@
       const pg = parseInt(document.getElementById('paginas').value);
       const ld = parseInt(document.getElementById('lidas').value);
       if (!t || !pg || isNaN(ld)) return alert('Preencha todos os campos!');
-      const book = { id: Date.now(), titulo: t, paginas: pg, lidas: ld, capa: c, history: [] };
+      const cy = new Date().getFullYear();
+      let status = 'quero_ler', year = cy, completedYear = null;
+      if (ld >= pg) { status = 'lido'; completedYear = cy; }
+      else if (ld > 0) { status = 'lendo'; }
+      const book = { id: Date.now(), titulo: t, paginas: pg, lidas: ld, capa: c, history: [], status, year, completedYear };
       if (ld > 0) {
         const date = new Date().toISOString().split('T')[0];
         const pct  = Math.round((ld/pg)*100);
