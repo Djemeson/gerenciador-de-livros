@@ -20,7 +20,7 @@
     .progress-bar { background:var(--progress-bg); height:8px; border-radius:4px; overflow:hidden; margin:0.25rem 0; }
     .progress-fill { height:100%; background:var(--progress-fill); width:0%; }
     .update-btn { background:#e0e0e0; color:var(--text-color); border:none; border-radius:0.25rem; padding:0.4rem 0.6rem; font-size:0.85rem; cursor:pointer; margin-top:0.5rem; width:150px; white-space:nowrap; text-align:center; }
-    input, select, button { padding:0.4rem; margin-bottom:0.5rem; width:100%; border:1px solid #ccc; border-radius:0.25rem; font-size:0.85rem; }
+    input, select, textarea, button { padding:0.4rem; margin-bottom:0.5rem; width:100%; border:1px solid #ccc; border-radius:0.25rem; font-size:0.85rem; }
     button.primary { background:#22c55e; color:white; border:none; font-weight:bold; cursor:pointer; }
     button.primary:hover { background:#16a34a; }
     .history-item { margin-bottom:0.5rem; font-size:0.9rem; }
@@ -131,7 +131,7 @@
       { id:'annual_challenge', name:'Desafio Anual', description:'Leia 20 livros até o final do ano!', pagesPerDay:17 }
     ];
     let livros = JSON.parse(localStorage.getItem('livros')) || [];
-    livros = livros.map(b => ({ ...b, history: b.history || [] }));
+    livros = livros.map(b => ({ ...b, history: b.history || [], resumo: b.resumo || '' }));
     let metaAnnual = JSON.parse(localStorage.getItem('metaAnnual')) || [];
     let metaAnnualCount = parseInt(localStorage.getItem('metaAnnualCount')) || metaAnnual.length;
     let selectingSlot = null;
@@ -570,6 +570,7 @@
               ${book.editora ? `<p><strong>Editora:</strong> ${book.editora}</p>` : ''}
               ${book.isbn ? `<p><strong>ISBN:</strong> ${book.isbn}</p>` : ''}
               ${book.tipo ? `<p><strong>Tipo:</strong> ${book.tipo}</p>` : ''}
+              ${book.resumo ? `<p><strong>Resumo:</strong> ${book.resumo}</p>` : ''}
       `;
       const sorted = book.history.slice().sort((a,b) => b.timestamp - a.timestamp);
       if (!sorted.length) html += '<p>Nenhum progresso registrado.</p>';
@@ -593,6 +594,7 @@
           <input id="titulo" placeholder="Título" />
           <input id="autor" placeholder="Autor" />
           <input id="editora" placeholder="Editora" />
+          <textarea id="resumo" placeholder="Resumo"></textarea>
           <input id="capa" placeholder="URL da capa" />
           <input id="paginas" type="number" placeholder="Páginas" />
           <input id="lidas" type="number" placeholder="Lidas" />
@@ -617,6 +619,7 @@
         document.getElementById('titulo').value = info.title || '';
         document.getElementById('autor').value = info.authors ? info.authors.join(', ') : '';
         document.getElementById('editora').value = info.publisher || '';
+        document.getElementById('resumo').value = info.description || '';
         document.getElementById('capa').value = (info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail)) || '';
         document.getElementById('paginas').value = info.pageCount || '';
       } catch (e) {
@@ -657,6 +660,7 @@
       const t = document.getElementById('titulo').value;
       const a = document.getElementById('autor').value;
       const e = document.getElementById('editora').value;
+      const r = document.getElementById('resumo').value;
       const c = document.getElementById('capa').value;
       const pg = parseInt(document.getElementById('paginas').value);
       const ld = parseInt(document.getElementById('lidas').value);
@@ -666,7 +670,7 @@
       let status = 'quero_ler', year = cy, completedYear = null;
       if (ld >= pg) { status = 'lido'; completedYear = cy; }
       else if (ld > 0) { status = 'lendo'; }
-      const book = { id: Date.now(), titulo: t, autor: a, editora: e, isbn, paginas: pg, lidas: ld, capa: c, tipo: tp, history: [], status, year, completedYear };
+      const book = { id: Date.now(), titulo: t, autor: a, editora: e, resumo: r, isbn, paginas: pg, lidas: ld, capa: c, tipo: tp, history: [], status, year, completedYear };
       if (ld > 0) {
         const date = new Date().toISOString().split('T')[0];
         const pct  = Math.round((ld/pg)*100);
