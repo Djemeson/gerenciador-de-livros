@@ -30,9 +30,9 @@
     .grid.large { grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); }
     .grid .card { margin-bottom:0; }
     .card img { width:100%; object-fit:cover; margin-bottom:0.5rem; border-radius:0.25rem; }
-    .grid.small .card img, .grid.small .cover-placeholder { height:120px; }
-    .grid.medium .card img, .grid.medium .cover-placeholder { height:140px; }
-    .grid.large .card img, .grid.large .cover-placeholder { height:160px; }
+    .grid .card img, .grid .cover-placeholder { aspect-ratio:2/3; height:auto; }
+    .grid .card img { object-fit:contain; }
+    .grid .update-btn { width:100%; }
     .view-size { display:flex; gap:0.25rem; }
     .view-size button { background:transparent; border:none; cursor:pointer; padding:0.2rem; border-radius:0.25rem; }
     .view-size button.active { background:var(--progress-bg); }
