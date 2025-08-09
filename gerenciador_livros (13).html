@@ -33,7 +33,7 @@
     .reading-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:0.5rem; }
     .reading-card { display:flex; flex-direction:column; align-items:center; text-align:center; cursor:pointer; }
     .reading-card img { width:100%; height:160px; object-fit:cover; border-radius:0.25rem; }
-    .reading-card strong { margin-top:0.25rem; font-size:0.9rem; }
+    .cover-placeholder { width:100%; height:160px; background:rgba(0,0,0,0.2); color:#fff; display:flex; align-items:center; justify-content:center; border-radius:0.25rem; padding:0.25rem; text-align:center; }
     .reading-card .progress-bar { width:100%; margin:0.25rem 0; }
     .reading-card .update-btn { width:100%; margin-top:0.25rem; }
     .history-layout { display:flex; gap:1rem; align-items:flex-start; }
@@ -281,11 +281,12 @@
       if (reading.length) {
         const items = reading.map(b => {
           const pc = Math.round((b.lidas / b.paginas) * 100);
-          const cover = b.capa ? `<img src=\"${b.capa}\" alt=\"Capa de ${b.titulo}\">` : '';
+          const cover = b.capa
+            ? `<img src=\"${b.capa}\" alt=\"Capa de ${b.titulo}\">`
+            : `<div class=\"cover-placeholder\">${b.titulo}</div>`;
           return `
             <div class=\"reading-card\" onclick=\"mostrarHistorico(${b.id},'dashboard')\">
               ${cover}
-              <strong>${b.titulo}</strong>
               <div>${b.lidas}/${b.paginas} (${pc}%)</div>
               <div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width:${pc}%\"></div></div>
               <button class=\"update-btn\" onclick=\"event.stopPropagation();showModal(${b.id});\">Atualizar</button>
