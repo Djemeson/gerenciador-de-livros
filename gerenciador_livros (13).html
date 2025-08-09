@@ -43,7 +43,9 @@
     .history-details { margin-top:0; }
     .history-synopsis { flex:1; }
     .history-reading { margin-top:1rem; }
-    .view-mode-select { width:auto; padding:0.2rem; margin-bottom:0; }
+    .view-toggle { display:flex; gap:0.3rem; }
+    .view-toggle button { background:transparent; border:none; cursor:pointer; padding:0.2rem; font-size:1.2rem; border-radius:0.25rem; }
+    .view-toggle button.active { background:var(--nav-bg); color:#fff; }
     #modal-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; }
     #modal { background:var(--card-bg); padding:0.5rem; border-radius:0.25rem; width:200px; box-shadow:0 2px 8px var(--card-shadow); }
     .goal-slots { display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:1rem; }
@@ -176,7 +178,17 @@
       localStorage.setItem('metaAnnualCount', metaAnnualCount);
     }
     function alternarTema() { const t = document.documentElement.getAttribute('data-theme'); const n = t === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', n); localStorage.setItem('tema', n); }
-    function setViewMode(m) { viewMode = m; localStorage.setItem('viewMode', m); renderBooks(); }
+    function setViewMode(m) {
+      viewMode = m;
+      localStorage.setItem('viewMode', m);
+      renderBooks();
+      const toggle = document.querySelector('.view-toggle');
+      if (toggle) {
+        toggle.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+        const btn = toggle.querySelector(`button[data-mode="${m}"]`);
+        if (btn) btn.classList.add('active');
+      }
+    }
 
     function navegar(p) {
       document.getElementById('tituloPagina').textContent = p.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -469,10 +481,10 @@
       top.style = 'margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center;';
       top.innerHTML = `
         <select id="yearSelect" class="year-select" onchange="changeYear(this.value)"></select>
-        <select class="view-mode-select" onchange="setViewMode(this.value)">
-          <option value="list" ${viewMode==='list'?'selected':''}>Lista</option>
-          <option value="grid" ${viewMode==='grid'?'selected':''}>Grade</option>
-        </select>`;
+        <div class="view-toggle">
+          <button data-mode="list" class="${viewMode==='list'?'active':''}" onclick="setViewMode('list')" title="Lista">📃</button>
+          <button data-mode="grid" class="${viewMode==='grid'?'active':''}" onclick="setViewMode('grid')" title="Grade">🔳</button>
+        </div>`;
       conteudo.appendChild(top);
       const tabsDiv = document.createElement('div');
       tabsDiv.id = 'tabsContainer';
