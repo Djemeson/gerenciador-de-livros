@@ -271,6 +271,7 @@
             <p>${b.lidas}/${b.paginas} (${pc}%)</p>
             <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
             <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">Atualizar progresso</button>
+            <button class="update-btn" onclick="event.stopPropagation();editarCapa(${b.id});">${b.capa ? 'Editar capa' : 'Adicionar capa'}</button>
           </div>
         `;
         container.appendChild(div);
@@ -288,8 +289,9 @@
       const sorted = book.history.slice().sort((a,b) => b.timestamp - a.timestamp);
       if (!sorted.length) html += '<p>Nenhum progresso registrado.</p>';
       else sorted.forEach(h => html += `<div class="history-item">${h.date}: ${h.pages} pág (${h.percent}%)</div>`);
-      html += `<button class="update-btn" onclick="showModal(${id});event.stopPropagation();">Atualizar progresso</button>
-        </div>`;
+      html += `<button class="update-btn" onclick="showModal(${id});event.stopPropagation();">Atualizar progresso</button>`;
+      html += `<button class="update-btn" onclick="editarCapa(${id});event.stopPropagation();">${book.capa ? 'Editar capa' : 'Adicionar capa'}</button>`;
+      html += `</div>`;
       conteudo.innerHTML = html;
     }
 
@@ -335,6 +337,16 @@
       livros.push(book);
       salvarLivros();
       navegar('biblioteca');
+    }
+
+    function editarCapa(id) {
+      const book = livros.find(b => b.id === id);
+      const url = prompt('URL da capa', book.capa || '');
+      if (url !== null) {
+        book.capa = url.trim();
+        salvarLivros();
+        navegar('biblioteca');
+      }
     }
 
     navegar('dashboard');
