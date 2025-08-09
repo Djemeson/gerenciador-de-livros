@@ -254,12 +254,12 @@
       }));
       const selected = livros.filter(b => metaAnnual.includes(b.id));
       const remaining = selected.reduce((sum, b) => sum + Math.max(0, b.paginas - b.lidas), 0);
-      const annualPagesRead = selected.reduce((sum, b) => sum + Math.min(b.lidas, b.paginas), 0);
       const endYear = new Date(hoje.getFullYear(), 11, 31);
       const msPerDay = 1000 * 60 * 60 * 24;
       const daysLeft = Math.ceil((endYear - hoje) / msPerDay) + 1;
       const perDay = daysLeft > 0 ? Math.ceil(remaining / daysLeft) : remaining;
-      document.getElementById('metaAnualPaginas').textContent = `${annualPagesRead} pág lidas · ${perDay} pág/dia`;
+      const trophy = daily >= perDay ? ' 🏆' : '';
+      document.getElementById('metaAnualPaginas').textContent = `${daily} pág lidas · ${perDay} pág/dia${trophy}`;
       const desafioId = localStorage.getItem('desafio') || desafios[0].id;
       const d = desafios.find(x => x.id === desafioId);
       const dm = d.pagesPerDay;
