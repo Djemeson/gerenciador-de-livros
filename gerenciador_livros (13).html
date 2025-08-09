@@ -260,11 +260,11 @@
       const d = desafios.find(x => x.id === desafioId);
       const dm = d.pagesPerDay;
       const wm = dm * 7;
-      const at = 20;
-      const ac = livros.filter(b => b.lidas >= b.paginas).length;
+      const at = metaAnnualCount;
+      const ac = selected.filter(b => b.lidas >= b.paginas).length;
       const dp = Math.min(100, Math.round(daily / dm * 100));
       const wp = Math.min(100, Math.round(weekly / wm * 100));
-      const ap = Math.min(100, Math.round(ac / at * 100));
+      const ap = at > 0 ? Math.min(100, Math.round(ac / at * 100)) : 0;
       const progressCard = `
         <div class=\"card\">
           <h2>Progresso Geral</h2>
