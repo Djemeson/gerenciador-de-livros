@@ -63,6 +63,8 @@
     .tabs { display:flex; gap:0.5rem; margin-bottom:1rem; }
     .tab { padding:0.4rem 0.8rem; background:var(--progress-bg); border:none; border-radius:0.25rem 0.25rem 0 0; cursor:pointer; }
     .tab.active { background:var(--nav-bg); color:#fff; }
+    .dashboard-columns { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .dashboard-left, .dashboard-right { display:flex; flex-direction:column; gap:1rem; }
   </style>
 </head>
 <body>
@@ -224,27 +226,30 @@
       const dp = Math.min(100, Math.round(daily / dm * 100));
       const wp = Math.min(100, Math.round(weekly / wm * 100));
       const ap = Math.min(100, Math.round(ac / at * 100));
-      let html = `
-        <div class="card">
+      const progressCard = `
+        <div class=\"card\">
           <h2>Progresso Geral</h2>
           <p>Diário: ${daily}/${dm} pág (${dp}%)</p>
-          <div class="progress-bar"><div class="progress-fill" style="width:${dp}%"></div></div>
+          <div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width:${dp}%\"></div></div>
           <p>Semanal: ${weekly}/${wm} pág (${wp}%)</p>
-          <div class="progress-bar"><div class="progress-fill" style="width:${wp}%"></div></div>
+          <div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width:${wp}%\"></div></div>
           <p>Anual: ${ac}/${at} livros (${ap}%)</p>
-          <div class="progress-bar"><div class="progress-fill" style="width:${ap}%"></div></div>
+          <div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width:${ap}%\"></div></div>
         </div>`;
+      let metaCard = '';
+      let summaryCard = '';
       if (d.id === 'annual_challenge') {
         const trophy = ac >= at ? '🏆 Meta Anual Alcançada! 🏆' : '';
-        html += `
-          <div class="card">
-            ${trophy && `<div style="font-size:2rem;text-align:center">${trophy}</div>`}
-            <h2>${d.name}</h2>
+        metaCard = `
+          <div class=\"card\">
+            ${trophy && `<div style=\"font-size:2rem;text-align:center\">${trophy}</div>`}
+            <h2>Meta diária</h2>
             <p>${d.description}</p>
-            <div class="progress-bar"><div class="progress-fill" style="width:${ap}%"></div></div>
+            <div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width:${ap}%\"></div></div>
             <p>${ac} de ${at} livros (${ap}%)</p>
-          </div>
-          <div class="card">
+          </div>`;
+        summaryCard = `
+          <div class=\"card\">
             <h2>Resumo</h2>
             <p><strong>Concluídos:</strong> ${ac} livros</p>
             <p><strong>Meta anual:</strong> ${at} livros</p>
@@ -255,15 +260,16 @@
         const rem = Math.max(0, d.pagesPerDay - tp);
         const pct = Math.min(100, Math.round(tp / d.pagesPerDay * 100));
         const trophy = pct >= 100 ? '🏆 Desafio Concluído! 🏆' : '';
-        html += `
-          <div class="card">
-            ${trophy && `<div style="font-size:2rem;text-align:center">${trophy}</div>`}
-            <h2>${d.name}</h2>
+        metaCard = `
+          <div class=\"card\">
+            ${trophy && `<div style=\"font-size:2rem;text-align:center\">${trophy}</div>`}
+            <h2>Meta diária</h2>
             <p>${d.description}</p>
-            <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+            <div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width:${pct}%\"></div></div>
             <p>${pct}% meta</p>
-          </div>
-          <div class="card">
+          </div>`;
+        summaryCard = `
+          <div class=\"card\">
             <h2>Resumo</h2>
             <p>Total: ${tp} pág</p>
             <p>Meta diária: ${d.pagesPerDay} pág</p>
@@ -271,28 +277,40 @@
           </div>`;
       }
       const reading = livros.filter(b => b.lidas > 0 && b.lidas < b.paginas);
+      let readingCard = '';
       if (reading.length) {
         const items = reading.map(b => {
           const pc = Math.round((b.lidas / b.paginas) * 100);
-          const cover = b.capa ? `<img src="${b.capa}" alt="Capa de ${b.titulo}">` : '';
+          const cover = b.capa ? `<img src=\"${b.capa}\" alt=\"Capa de ${b.titulo}\">` : '';
           return `
-            <div class="reading-card" onclick="mostrarHistorico(${b.id},'dashboard')">
+            <div class=\"reading-card\" onclick=\"mostrarHistorico(${b.id},'dashboard')\">
               ${cover}
               <strong>${b.titulo}</strong>
               <div>${b.lidas}/${b.paginas} (${pc}%)</div>
-              <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
-              <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">Atualizar</button>
+              <div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width:${pc}%\"></div></div>
+              <button class=\"update-btn\" onclick=\"event.stopPropagation();showModal(${b.id});\">Atualizar</button>
             </div>
           `;
         }).join('');
-        html += `
-          <div class="card">
+        readingCard = `
+          <div class=\"card\">
             <h2>Em leitura</h2>
-            <div class="reading-grid">
+            <div class=\"reading-grid\">
               ${items}
             </div>
           </div>`;
       }
+      const html = `
+        <div class=\"dashboard-columns\">
+          <div class=\"dashboard-left\">
+            ${metaCard}
+            ${progressCard}
+            ${summaryCard}
+          </div>
+          <div class=\"dashboard-right\">
+            ${readingCard}
+          </div>
+        </div>`;
       conteudo.innerHTML = html;
     }
 
