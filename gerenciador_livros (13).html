@@ -280,6 +280,7 @@
               ${cover}
               <strong>${b.titulo}</strong>
               <div>${b.lidas}/${b.paginas} (${pc}%)</div>
+              ${b.tipo ? `<div>${b.tipo}</div>` : ''}
               <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
               <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">Atualizar</button>
             </div>
@@ -475,12 +476,14 @@
         if (viewMode === 'list') div.classList.add('list');
         div.onclick = () => mostrarHistorico(b.id);
         const cover = b.capa ? `<img src="${b.capa}" alt="Capa de ${b.titulo}">` : '';
+        const tipo = b.tipo ? `<p>Tipo: ${b.tipo}</p>` : '';
         div.innerHTML = `
           ${cover}
           <div class="details">
             <h3>${b.titulo}</h3>
             <p>${b.lidas}/${b.paginas} (${pc}%)</p>
             <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
+            ${tipo}
             <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">Atualizar progresso</button>
           </div>
         `;
@@ -499,6 +502,7 @@
             ${cover}
             <div class="history-details">
               <h2>Histórico: ${book.titulo}</h2>
+              ${book.tipo ? `<p><strong>Tipo:</strong> ${book.tipo}</p>` : ''}
       `;
       const sorted = book.history.slice().sort((a,b) => b.timestamp - a.timestamp);
       if (!sorted.length) html += '<p>Nenhum progresso registrado.</p>';
@@ -520,6 +524,12 @@
           <input id="capa" placeholder="URL da capa" />
           <input id="paginas" type="number" placeholder="Páginas" />
           <input id="lidas" type="number" placeholder="Lidas" />
+          <select id="tipo">
+            <option value="" disabled selected>Tipo</option>
+            <option value="Físico">Físico</option>
+            <option value="E-book">E-book</option>
+            <option value="Audiobook">Audiobook</option>
+          </select>
           <button class="primary" onclick="adicionarLivro()">Salvar</button>
         </div>`;
     }
@@ -557,12 +567,13 @@
       const c = document.getElementById('capa').value;
       const pg = parseInt(document.getElementById('paginas').value);
       const ld = parseInt(document.getElementById('lidas').value);
-      if (!t || !pg || isNaN(ld)) return alert('Preencha todos os campos!');
+      const tp = document.getElementById('tipo').value;
+      if (!t || !pg || isNaN(ld) || !tp) return alert('Preencha todos os campos!');
       const cy = new Date().getFullYear();
       let status = 'quero_ler', year = cy, completedYear = null;
       if (ld >= pg) { status = 'lido'; completedYear = cy; }
       else if (ld > 0) { status = 'lendo'; }
-      const book = { id: Date.now(), titulo: t, paginas: pg, lidas: ld, capa: c, history: [], status, year, completedYear };
+      const book = { id: Date.now(), titulo: t, paginas: pg, lidas: ld, capa: c, tipo: tp, history: [], status, year, completedYear };
       if (ld > 0) {
         const date = new Date().toISOString().split('T')[0];
         const pct  = Math.round((ld/pg)*100);
