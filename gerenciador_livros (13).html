@@ -33,7 +33,7 @@
     .reading-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:0.5rem; }
     .reading-card { display:flex; flex-direction:column; align-items:center; text-align:center; cursor:pointer; }
     .reading-card img { width:100%; height:160px; object-fit:cover; border-radius:0.25rem; }
-    .reading-card strong { margin-top:0.25rem; font-size:0.9rem; }
+    .cover-placeholder { width:100%; height:160px; background:rgba(0,0,0,0.2); color:#fff; display:flex; align-items:center; justify-content:center; border-radius:0.25rem; padding:0.25rem; text-align:center; }
     .reading-card .progress-bar { width:100%; margin:0.25rem 0; }
     .reading-card .update-btn { width:100%; margin-top:0.25rem; }
     .history-layout { display:flex; gap:1rem; align-items:flex-start; }
@@ -65,6 +65,8 @@
     .tabs { display:flex; gap:0.5rem; margin-bottom:1rem; }
     .tab { padding:0.4rem 0.8rem; background:var(--progress-bg); border:none; border-radius:0.25rem 0.25rem 0 0; cursor:pointer; }
     .tab.active { background:var(--nav-bg); color:#fff; }
+    .dashboard-columns { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .dashboard-left, .dashboard-right { display:flex; flex-direction:column; gap:1rem; }
   </style>
 </head>
 <body>
@@ -91,6 +93,7 @@
       <input type="date" id="modal-date" />
       <select id="modal-type"><option value="pages">Páginas</option><option value="percent">%</option></select>
       <input type="number" id="modal-value" placeholder="Valor" />
+      <div id="modal-progress" style="margin:0.5rem 0;"></div>
       <button id="modal-save" class="primary">OK</button>
       <button onclick="hideModal()" style="background:transparent;color:var(--text-color);padding:0.3rem;width:100%">X</button>
     </div>
@@ -134,8 +137,17 @@
     let viewMode = localStorage.getItem('viewMode') || 'list';
     const conteudo = document.getElementById('conteudo');
     document.getElementById('today').textContent = new Date().toLocaleDateString();
+    let currentDate = new Date().toISOString().split('T')[0];
     if (localStorage.getItem('tema')) document.documentElement.setAttribute('data-theme', localStorage.getItem('tema'));
     document.getElementById('book-search').addEventListener('input', e => renderBookList(e.target.value));
+    setInterval(() => {
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (todayStr !== currentDate) {
+        currentDate = todayStr;
+        document.getElementById('today').textContent = new Date().toLocaleDateString();
+        if (document.getElementById('tituloPagina').textContent === 'Dashboard') carregarDashboard();
+      }
+    }, 60 * 1000);
     let selectedYear = new Date().getFullYear();
     let selectedTab = 'lendo';
     let editingTypeId = null;
@@ -179,14 +191,24 @@
     let currentEditId = null;
     function showModal(id) {
       currentEditId = id;
+      const book = livros.find(b => b.id === id);
       document.getElementById('modal-date').value = new Date().toISOString().split('T')[0];
       document.getElementById('modal-type').value = 'pages';
-      document.getElementById('modal-value').value = '';
+      const valueInput = document.getElementById('modal-value');
+      valueInput.value = '';
+      const pct = Math.round((book.lidas / book.paginas) * 100);
+      document.getElementById('modal-progress').textContent = `${book.lidas}/${book.paginas} (${pct}%)`;
       document.getElementById('modal-overlay').style.display = 'flex';
+      valueInput.focus();
+      valueInput.select();
     }
-    function hideModal() { document.getElementById('modal-overlay').style.display = 'none'; currentEditId = null; }
+    function hideModal() {
+      document.getElementById('modal-overlay').style.display = 'none';
+      currentEditId = null;
+      document.getElementById('modal-progress').textContent = '';
+    }
 
-    document.getElementById('modal-save').addEventListener('click', () => {
+    function saveModal() {
       const date = document.getElementById('modal-date').value;
       const type = document.getElementById('modal-type').value;
       const val = parseFloat(document.getElementById('modal-value').value);
@@ -210,7 +232,10 @@
         book.year = new Date().getFullYear();
       }
       salvarLivros(); hideModal(); navegar('biblioteca');
-    });
+    }
+
+    document.getElementById('modal-save').addEventListener('click', saveModal);
+    document.getElementById('modal-value').addEventListener('keydown', e => { if (e.key === 'Enter') saveModal(); });
 
     function carregarDashboard() {
       const hoje = new Date();
@@ -240,27 +265,30 @@
       const dp = Math.min(100, Math.round(daily / dm * 100));
       const wp = Math.min(100, Math.round(weekly / wm * 100));
       const ap = Math.min(100, Math.round(ac / at * 100));
-      let html = `
-        <div class="card">
+      const progressCard = `
+        <div class=\"card\">
           <h2>Progresso Geral</h2>
           <p>Diário: ${daily}/${dm} pág (${dp}%)</p>
-          <div class="progress-bar"><div class="progress-fill" style="width:${dp}%"></div></div>
+          <div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width:${dp}%\"></div></div>
           <p>Semanal: ${weekly}/${wm} pág (${wp}%)</p>
-          <div class="progress-bar"><div class="progress-fill" style="width:${wp}%"></div></div>
+          <div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width:${wp}%\"></div></div>
           <p>Anual: ${ac}/${at} livros (${ap}%)</p>
-          <div class="progress-bar"><div class="progress-fill" style="width:${ap}%"></div></div>
+          <div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width:${ap}%\"></div></div>
         </div>`;
+      let metaCard = '';
+      let summaryCard = '';
       if (d.id === 'annual_challenge') {
         const trophy = ac >= at ? '🏆 Meta Anual Alcançada! 🏆' : '';
-        html += `
-          <div class="card">
-            ${trophy && `<div style="font-size:2rem;text-align:center">${trophy}</div>`}
-            <h2>${d.name}</h2>
+        metaCard = `
+          <div class=\"card\">
+            ${trophy && `<div style=\"font-size:2rem;text-align:center\">${trophy}</div>`}
+            <h2>Meta diária</h2>
             <p>${d.description}</p>
-            <div class="progress-bar"><div class="progress-fill" style="width:${ap}%"></div></div>
+            <div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width:${ap}%\"></div></div>
             <p>${ac} de ${at} livros (${ap}%)</p>
-          </div>
-          <div class="card">
+          </div>`;
+        summaryCard = `
+          <div class=\"card\">
             <h2>Resumo</h2>
             <p><strong>Concluídos:</strong> ${ac} livros</p>
             <p><strong>Meta anual:</strong> ${at} livros</p>
@@ -271,15 +299,16 @@
         const rem = Math.max(0, d.pagesPerDay - tp);
         const pct = Math.min(100, Math.round(tp / d.pagesPerDay * 100));
         const trophy = pct >= 100 ? '🏆 Desafio Concluído! 🏆' : '';
-        html += `
-          <div class="card">
-            ${trophy && `<div style="font-size:2rem;text-align:center">${trophy}</div>`}
-            <h2>${d.name}</h2>
+        metaCard = `
+          <div class=\"card\">
+            ${trophy && `<div style=\"font-size:2rem;text-align:center\">${trophy}</div>`}
+            <h2>Meta diária</h2>
             <p>${d.description}</p>
-            <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+            <div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width:${pct}%\"></div></div>
             <p>${pct}% meta</p>
-          </div>
-          <div class="card">
+          </div>`;
+        summaryCard = `
+          <div class=\"card\">
             <h2>Resumo</h2>
             <p>Total: ${tp} pág</p>
             <p>Meta diária: ${d.pagesPerDay} pág</p>
@@ -287,14 +316,16 @@
           </div>`;
       }
       const reading = livros.filter(b => b.lidas > 0 && b.lidas < b.paginas);
+      let readingCard = '';
       if (reading.length) {
         const items = reading.map(b => {
           const pc = Math.round((b.lidas / b.paginas) * 100);
-          const cover = b.capa ? `<img src="${b.capa}" alt="Capa de ${b.titulo}">` : '';
+          const cover = b.capa
+            ? `<img src=\"${b.capa}\" alt=\"Capa de ${b.titulo}\">`
+            : `<div class=\"cover-placeholder\">${b.titulo}</div>`;
           return `
-            <div class="reading-card" onclick="mostrarHistorico(${b.id},'dashboard')">
+            <div class=\"reading-card\" onclick=\"mostrarHistorico(${b.id},'dashboard')\">
               ${cover}
-              <strong>${b.titulo}</strong>
               <div>${b.lidas}/${b.paginas} (${pc}%)</div>
               ${b.tipo ? `<div>${b.tipo}</div>` : ''}
               <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
@@ -302,14 +333,25 @@
             </div>
           `;
         }).join('');
-        html += `
-          <div class="card">
+        readingCard = `
+          <div class=\"card\">
             <h2>Em leitura</h2>
-            <div class="reading-grid">
+            <div class=\"reading-grid\">
               ${items}
             </div>
           </div>`;
       }
+      const html = `
+        <div class=\"dashboard-columns\">
+          <div class=\"dashboard-left\">
+            ${metaCard}
+            ${progressCard}
+            ${summaryCard}
+          </div>
+          <div class=\"dashboard-right\">
+            ${readingCard}
+          </div>
+        </div>`;
       conteudo.innerHTML = html;
     }
 
