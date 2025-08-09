@@ -26,6 +26,10 @@
     .history-item { margin-bottom:0.5rem; font-size:0.9rem; }
     .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1rem; }
     .grid .card { margin-bottom:0; }
+    .card img { width:100%; object-fit:cover; margin-bottom:0.5rem; border-radius:0.25rem; }
+    .card.list { display:flex; align-items:center; gap:0.5rem; }
+    .card.list img { width:50px; height:75px; margin-bottom:0; }
+    .card.list .details { flex:1; }
     .view-mode-select { width:auto; padding:0.2rem; margin-bottom:0; }
     #modal-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; }
     #modal { background:var(--card-bg); padding:0.5rem; border-radius:0.25rem; width:200px; box-shadow:0 2px 8px var(--card-shadow); }
@@ -257,12 +261,18 @@
         const pc = Math.round((b.lidas/b.paginas)*100);
         const div = document.createElement('div');
         div.className = 'card';
+        if (viewMode === 'list') div.classList.add('list');
         div.onclick = () => mostrarHistorico(b.id);
+        const cover = b.capa ? `<img src="${b.capa}" alt="Capa de ${b.titulo}">` : '';
         div.innerHTML = `
-          <h3>${b.titulo}</h3>
-          <p>${b.lidas}/${b.paginas} (${pc}%)</p>
-          <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
-          <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">Atualizar progresso</button>
+          ${cover}
+          <div class="details">
+            <h3>${b.titulo}</h3>
+            <p>${b.lidas}/${b.paginas} (${pc}%)</p>
+            <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
+            <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">Atualizar progresso</button>
+            <button class="update-btn" onclick="event.stopPropagation();editarCapa(${b.id});">${b.capa ? 'Editar capa' : 'Adicionar capa'}</button>
+          </div>
         `;
         container.appendChild(div);
       });
@@ -279,8 +289,9 @@
       const sorted = book.history.slice().sort((a,b) => b.timestamp - a.timestamp);
       if (!sorted.length) html += '<p>Nenhum progresso registrado.</p>';
       else sorted.forEach(h => html += `<div class="history-item">${h.date}: ${h.pages} pág (${h.percent}%)</div>`);
-      html += `<button class="update-btn" onclick="showModal(${id});event.stopPropagation();">Atualizar progresso</button>
-        </div>`;
+      html += `<button class="update-btn" onclick="showModal(${id});event.stopPropagation();">Atualizar progresso</button>`;
+      html += `<button class="update-btn" onclick="editarCapa(${id});event.stopPropagation();">${book.capa ? 'Editar capa' : 'Adicionar capa'}</button>`;
+      html += `</div>`;
       conteudo.innerHTML = html;
     }
 
@@ -289,6 +300,7 @@
         <div class="card">
           <h2>Adicionar Livro</h2>
           <input id="titulo" placeholder="Título" />
+          <input id="capa" placeholder="URL da capa" />
           <input id="paginas" type="number" placeholder="Páginas" />
           <input id="lidas" type="number" placeholder="Lidas" />
           <button class="primary" onclick="adicionarLivro()">Salvar</button>
@@ -312,10 +324,11 @@
 
     function adicionarLivro() {
       const t = document.getElementById('titulo').value;
+      const c = document.getElementById('capa').value;
       const pg = parseInt(document.getElementById('paginas').value);
       const ld = parseInt(document.getElementById('lidas').value);
       if (!t || !pg || isNaN(ld)) return alert('Preencha todos os campos!');
-      const book = { id: Date.now(), titulo: t, paginas: pg, lidas: ld, history: [] };
+      const book = { id: Date.now(), titulo: t, paginas: pg, lidas: ld, capa: c, history: [] };
       if (ld > 0) {
         const date = new Date().toISOString().split('T')[0];
         const pct  = Math.round((ld/pg)*100);
@@ -324,6 +337,16 @@
       livros.push(book);
       salvarLivros();
       navegar('biblioteca');
+    }
+
+    function editarCapa(id) {
+      const book = livros.find(b => b.id === id);
+      const url = prompt('URL da capa', book.capa || '');
+      if (url !== null) {
+        book.capa = url.trim();
+        salvarLivros();
+        navegar('biblioteca');
+      }
     }
 
     navegar('dashboard');
