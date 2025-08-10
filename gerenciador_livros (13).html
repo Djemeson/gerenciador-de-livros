@@ -276,11 +276,21 @@
       currentEditId = id;
       const book = livros.find(b => b.id === id);
       document.getElementById('modal-date').value = new Date().toISOString().split('T')[0];
-      document.getElementById('modal-type').value = 'pages';
+      const typeSelect = document.getElementById('modal-type');
+      if (book.tipo === 'Audiobook') {
+        typeSelect.value = 'percent';
+        typeSelect.style.display = 'none';
+      } else {
+        typeSelect.value = 'pages';
+        typeSelect.style.display = '';
+      }
       const valueInput = document.getElementById('modal-value');
       valueInput.value = '';
-      const pct = Math.round((book.lidas / book.paginas) * 100);
-      document.getElementById('modal-progress').textContent = `${book.lidas}/${book.paginas} (${pct}%)`;
+      const pct = book.tipo === 'Audiobook' ? book.lidas : Math.round((book.lidas / book.paginas) * 100);
+      const progressText = book.tipo === 'Audiobook'
+        ? `${book.lidas}%`
+        : `${book.lidas}/${book.paginas} (${pct}%)`;
+      document.getElementById('modal-progress').textContent = progressText;
       document.getElementById('modal-overlay').style.display = 'flex';
       valueInput.focus();
       valueInput.select();
@@ -289,6 +299,7 @@
       document.getElementById('modal-overlay').style.display = 'none';
       currentEditId = null;
       document.getElementById('modal-progress').textContent = '';
+      document.getElementById('modal-type').style.display = '';
     }
 
     function saveModal() {
@@ -298,20 +309,28 @@
       const book = livros.find(b => b.id === currentEditId);
       if (!date || isNaN(val)) return alert('Inválido');
       const old = book.lidas;
-      const np = type === 'percent' ? Math.round(book.paginas * (val / 100)) : val;
+      let np, pct;
+      if (book.tipo === 'Audiobook') {
+        np = Math.min(val, 100);
+        pct = np;
+      } else {
+        const npPages = type === 'percent' ? Math.round(book.paginas * (val / 100)) : val;
+        np = Math.min(npPages, book.paginas);
+        pct = Math.round((np / book.paginas) * 100);
+      }
       const delta = np - old;
-      const pct = Math.round((np / book.paginas) * 100);
-      book.lidas = Math.min(np, book.paginas);
+      book.lidas = np;
       if (book.lidas > 0 && !book.startDate) {
         book.startDate = date;
       } else if (book.lidas === 0) {
         book.startDate = null;
       }
       book.history.push({ date, pages: book.lidas, percent: pct, delta, timestamp: Date.now() });
-      if (book.lidas >= book.paginas) {
+      const finished = book.tipo === 'Audiobook' ? book.lidas >= 100 : book.lidas >= book.paginas;
+      if (finished) {
         book.status = 'lido';
         book.completedYear = new Date().getFullYear();
-        book.lidas = book.paginas;
+        book.lidas = book.tipo === 'Audiobook' ? 100 : book.paginas;
         book.endDate = book.endDate || date;
       } else if (book.lidas > 0) {
         book.status = 'lendo';
@@ -410,14 +429,16 @@
       let readingCard = '';
       if (reading.length) {
         const items = reading.map(b => {
-          const pc = Math.round((b.lidas / b.paginas) * 100);
+          const isAudio = b.tipo === 'Audiobook';
+          const pc = isAudio ? b.lidas : Math.round((b.lidas / b.paginas) * 100);
+          const progressText = isAudio ? `${pc}%` : `${b.lidas}/${b.paginas} (${pc}%)`;
           const cover = b.capa
             ? `<img src=\"${b.capa}\" alt=\"Capa de ${b.titulo}\">`
             : `<div class=\"cover-placeholder\">${b.titulo}</div>`;
           return `
             <div class=\"reading-card\" onclick=\"mostrarHistorico(${b.id},'dashboard')\">
               ${cover}
-              <div>${b.lidas}/${b.paginas} (${pc}%)</div>
+              <div>${progressText}</div>
               ${b.tipo ? `<div>${b.tipo}</div>` : ''}
               <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
               <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">Atualizar</button>
@@ -623,34 +644,36 @@
         list = livros.filter(b => b.status==='lido' && b.completedYear===selectedYear);
       }
       if (!list.length) { container.innerHTML = '<p>Nenhum livro.</p>'; return; }
-      list.forEach(b => {
-        const pc = Math.round((b.lidas/b.paginas)*100);
-        const div = document.createElement('div');
-        div.className = 'card';
-        if (viewMode === 'list') div.classList.add('list');
-        div.onclick = () => mostrarHistorico(b.id);
-        const cover = b.capa
-          ? `<img src="${b.capa}" alt="Capa de ${b.titulo}">`
-          : `<div class="cover-placeholder">${b.titulo}</div>`;
-        const start = b.startDate ? `<p>Início: ${formatDate(b.startDate)}</p>` : '';
-        const end = b.endDate ? `<p>Fim: ${formatDate(b.endDate)}</p>` : '';
-        const tipo = b.tipo
-          ? `<p>Tipo: ${b.tipo}</p>`
-          : `<button class="update-btn" onclick="event.stopPropagation();editarTipo(${b.id});">Definir tipo</button>`;
-        const updateTxt = (viewMode === 'grid' && gridSize === 'small') ? 'Atualizar' : 'Atualizar progresso';
-        div.innerHTML = `
-          ${cover}
-          <div class="details">
-            <p>${b.lidas}/${b.paginas} (${pc}%)</p>
-            <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
-            ${tipo}
-            ${start}
-            ${end}
-            <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">${updateTxt}</button>
-          </div>
-        `;
-        container.appendChild(div);
-      });
+        list.forEach(b => {
+          const isAudio = b.tipo === 'Audiobook';
+          const pc = isAudio ? b.lidas : Math.round((b.lidas/b.paginas)*100);
+          const div = document.createElement('div');
+          div.className = 'card';
+          if (viewMode === 'list') div.classList.add('list');
+          div.onclick = () => mostrarHistorico(b.id);
+          const cover = b.capa
+            ? `<img src="${b.capa}" alt="Capa de ${b.titulo}">`
+            : `<div class="cover-placeholder">${b.titulo}</div>`;
+          const start = b.startDate ? `<p>Início: ${formatDate(b.startDate)}</p>` : '';
+          const end = b.endDate ? `<p>Fim: ${formatDate(b.endDate)}</p>` : '';
+          const tipo = b.tipo
+            ? `<p>Tipo: ${b.tipo}</p>`
+            : `<button class="update-btn" onclick="event.stopPropagation();editarTipo(${b.id});">Definir tipo</button>`;
+          const updateTxt = (viewMode === 'grid' && gridSize === 'small') ? 'Atualizar' : 'Atualizar progresso';
+          const progressText = isAudio ? `${pc}%` : `${b.lidas}/${b.paginas} (${pc}%)`;
+          div.innerHTML = `
+            ${cover}
+            <div class="details">
+              <p>${progressText}</p>
+              <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
+              ${tipo}
+              ${start}
+              ${end}
+              <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">${updateTxt}</button>
+            </div>
+          `;
+          container.appendChild(div);
+        });
     }
 
     function mostrarHistorico(id, back='biblioteca') {
@@ -682,7 +705,10 @@
             <h3>Histórico de leitura</h3>`;
       const sorted = book.history.slice().sort((a,b) => b.timestamp - a.timestamp);
       if (!sorted.length) html += '<p>Nenhum progresso registrado.</p>';
-      else sorted.forEach(h => html += `<div class="history-item">${h.date}: ${h.pages} pág (${h.percent}%)</div>`);
+      else sorted.forEach(h => {
+        const unit = book.tipo === 'Audiobook' ? '%' : 'pág';
+        html += `<div class="history-item">${h.date}: ${h.pages} ${unit} (${h.percent}%)</div>`;
+      });
       html += `
             <button class="update-btn" onclick="showModal(${id});event.stopPropagation();">Atualizar progresso</button>
             <button class="update-btn" onclick="editarCapa(${id});event.stopPropagation();">${book.capa ? 'Editar capa' : 'Adicionar capa'}</button>
@@ -705,6 +731,7 @@
           <input id="capa" placeholder="URL da capa" />
           <input id="paginas" type="number" placeholder="Páginas" />
           <input id="lidas" type="number" placeholder="Lidas" />
+          <input id="percent" type="number" placeholder="Porcentagem" style="display:none" />
           <select id="tipo">
             <option value="" disabled selected>Tipo</option>
             <option value="Físico">Físico</option>
@@ -713,6 +740,12 @@
           </select>
           <button class="primary" onclick="adicionarLivro()">Salvar</button>
         </div>`;
+      document.getElementById('tipo').addEventListener('change', e => {
+        const isAudio = e.target.value === 'Audiobook';
+        document.getElementById('paginas').style.display = isAudio ? 'none' : '';
+        document.getElementById('lidas').style.display = isAudio ? 'none' : '';
+        document.getElementById('percent').style.display = isAudio ? '' : 'none';
+      });
     }
 
     async function buscarISBN() {
@@ -769,10 +802,14 @@
       const e = document.getElementById('editora').value;
       const r = document.getElementById('resumo').value;
       const c = document.getElementById('capa').value;
-      const pg = parseInt(document.getElementById('paginas').value);
-      const ld = parseInt(document.getElementById('lidas').value) || 0;
+      let pg = parseInt(document.getElementById('paginas').value);
+      let ld = parseInt(document.getElementById('lidas').value) || 0;
       const tp = document.getElementById('tipo').value;
-      if (!t || !pg || !tp) return alert('Preencha todos os campos!');
+      if (tp === 'Audiobook') {
+        pg = 100;
+        ld = parseInt(document.getElementById('percent').value) || 0;
+      }
+      if (!t || isNaN(pg) || !tp) return alert('Preencha todos os campos!');
       const cy = new Date().getFullYear();
       let status = 'quero_ler', year = cy, completedYear = null;
       if (ld >= pg) { status = 'lido'; completedYear = cy; }
