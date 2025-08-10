@@ -94,8 +94,6 @@
     #slot-view { font-size:1rem; margin-bottom:0.8rem; }
     #slot-remove { position:absolute; bottom:0.5rem; right:0.5rem; font-size:0.8rem; }
     #slot-options button:hover { opacity:0.7; }
-    #type-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; }
-    #type-editor { background:var(--card-bg); padding:0.5rem; border-radius:0.25rem; width:200px; box-shadow:0 2px 8px var(--card-shadow); }
     .goal-count { display:flex; align-items:center; gap:0.5rem; }
     .goal-count input { width:60px; margin:0; }
     .year-select { width:auto; margin-right:0.5rem; }
@@ -147,18 +145,6 @@
       <button id="slot-remove" title="Remover">🗑️</button>
     </div>
   </div>
-  <div id="type-overlay" onclick="closeTypeEditor()">
-    <div id="type-editor" onclick="event.stopPropagation()">
-      <select id="type-select">
-        <option value="" disabled selected>Tipo</option>
-        <option value="Físico">Físico</option>
-        <option value="E-book">E-book</option>
-        <option value="Audiobook">Audiobook</option>
-      </select>
-      <button class="primary" onclick="saveType()">Salvar</button>
-      <button onclick="closeTypeEditor()" style="background:transparent;color:var(--text-color);padding:0.3rem;width:100%">X</button>
-    </div>
-  </div>
   <script>
     const desafios = [
       { id:'bookmark_sprint', name:'Bookmark Sprint', description:'Ler 15 pág/dia', pagesPerDay:15 },
@@ -194,8 +180,6 @@
     let selectedYear = new Date().getFullYear();
     let selectedTab = 'lendo';
     let groupByCategory = false;
-    let editingTypeId = null;
-    let typeBack = 'biblioteca';
 
     function salvarLivros() { localStorage.setItem('livros', JSON.stringify(livros)); }
     function formatDate(dateStr) {
@@ -658,9 +642,7 @@
         : `<div class="cover-placeholder">${b.titulo}</div>`;
       const start = b.startDate ? `<p>Início: ${formatDate(b.startDate)}</p>` : '';
       const end = b.endDate ? `<p>Fim: ${formatDate(b.endDate)}</p>` : '';
-      const tipo = b.tipo
-        ? `<p>Tipo: ${b.tipo}</p>`
-        : `<button class="update-btn" onclick="event.stopPropagation();editarTipo(${b.id});">Definir tipo</button>`;
+      const tipoInfo = b.tipo ? `<p>Tipo: ${b.tipo}</p>` : '';
       const updateTxt = (viewMode === 'grid' && gridSize === 'small') ? 'Atualizar' : 'Atualizar progresso';
       const progressText = isAudio ? `${pc}%` : `${b.lidas}/${b.paginas} (${pc}%)`;
       div.innerHTML = `
@@ -668,10 +650,11 @@
             <div class="details">
               <p>${progressText}</p>
               <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
-              ${tipo}
+              ${tipoInfo}
               ${start}
               ${end}
               <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">${updateTxt}</button>
+              <button class="update-btn" onclick="event.stopPropagation();editarLivro(${b.id});">Editar</button>
             </div>
           `;
       parent.appendChild(div);
@@ -747,8 +730,7 @@
       });
       html += `
             <button class="update-btn" onclick="showModal(${id});event.stopPropagation();">Atualizar progresso</button>
-            <button class="update-btn" onclick="editarCapa(${id});event.stopPropagation();">${book.capa ? 'Editar capa' : 'Adicionar capa'}</button>
-            <button class="update-btn" onclick="event.stopPropagation();editarTipo(${id}, '${back}');">${book.tipo ? 'Editar tipo' : 'Adicionar tipo'}</button>
+            <button class="update-btn" onclick="event.stopPropagation();editarLivro(${id}, '${back}');">Editar</button>
           </div>
         </div>`;
       conteudo.innerHTML = html;
@@ -866,40 +848,81 @@
       navegar('biblioteca');
     }
 
-    function editarCapa(id) {
+    function editarLivro(id, back = 'biblioteca') {
       const book = livros.find(b => b.id === id);
-      const url = prompt('URL da capa', book.capa || '');
-      if (url !== null) {
-        book.capa = url.trim();
-        salvarLivros();
-        navegar('biblioteca');
+      if (!book) return;
+      conteudo.innerHTML = `
+        <div class="card">
+          <h2>Editar Livro</h2>
+          <input id="isbn" placeholder="ISBN" value="${book.isbn || ''}" />
+          <button class="update-btn" onclick="buscarISBN()">Buscar</button>
+          <input id="titulo" placeholder="Título" value="${book.titulo || ''}" />
+          <input id="autor" placeholder="Autor" value="${book.autor || ''}" />
+          <input id="editora" placeholder="Editora" value="${book.editora || ''}" />
+          <input id="categoria" placeholder="Categoria" value="${book.categoria || ''}" />
+          <textarea id="resumo" placeholder="Resumo">${book.resumo || ''}</textarea>
+          <input id="capa" placeholder="URL da capa" value="${book.capa || ''}" />
+          <input id="paginas" type="number" placeholder="Páginas" />
+          <input id="lidas" type="number" placeholder="Lidas" />
+          <input id="percent" type="number" placeholder="Porcentagem" style="display:none" />
+          <select id="tipo">
+            <option value="" disabled>Tipo</option>
+            <option value="Físico">Físico</option>
+            <option value="E-book">E-book</option>
+            <option value="Audiobook">Audiobook</option>
+          </select>
+          <button class="primary" onclick="salvarEdicao(${id}, '${back}')">Salvar</button>
+        </div>`;
+      const tipoEl = document.getElementById('tipo');
+      const toggleFields = value => {
+        const isAudio = value === 'Audiobook';
+        document.getElementById('paginas').style.display = isAudio ? 'none' : '';
+        document.getElementById('lidas').style.display = isAudio ? 'none' : '';
+        document.getElementById('percent').style.display = isAudio ? '' : 'none';
+        if (isAudio) {
+          document.getElementById('percent').value = book.lidas || 0;
+        } else {
+          document.getElementById('paginas').value = book.paginas || '';
+          document.getElementById('lidas').value = book.lidas || 0;
+        }
+      };
+      tipoEl.addEventListener('change', e => toggleFields(e.target.value));
+      tipoEl.value = book.tipo || '';
+      toggleFields(tipoEl.value);
+    }
+
+    function salvarEdicao(id, back = 'biblioteca') {
+      const isbn = document.getElementById('isbn').value;
+      const t = document.getElementById('titulo').value;
+      const a = document.getElementById('autor').value;
+      const e = document.getElementById('editora').value;
+      const cat = document.getElementById('categoria').value;
+      const r = document.getElementById('resumo').value;
+      const c = document.getElementById('capa').value;
+      let pg = parseInt(document.getElementById('paginas').value);
+      let ld = parseInt(document.getElementById('lidas').value) || 0;
+      const tp = document.getElementById('tipo').value;
+      if (tp === 'Audiobook') {
+        pg = 100;
+        ld = parseInt(document.getElementById('percent').value) || 0;
       }
-    }
-
-    function editarTipo(id, back = 'biblioteca') {
-      editingTypeId = id;
-      typeBack = back;
+      if (!t || isNaN(pg) || !tp) return alert('Preencha todos os campos!');
       const book = livros.find(b => b.id === id);
-      const select = document.getElementById('type-select');
-      select.value = book.tipo || '';
-      document.getElementById('type-overlay').style.display = 'flex';
-    }
-
-    function saveType() {
-      const tp = document.getElementById('type-select').value;
-      if (!tp) { alert('Selecione um tipo'); return; }
-      const book = livros.find(b => b.id === editingTypeId);
+      book.isbn = isbn;
+      book.titulo = t;
+      book.autor = a;
+      book.editora = e;
+      book.categoria = cat;
+      book.resumo = r;
+      book.capa = c;
+      book.paginas = pg;
+      book.lidas = ld;
       book.tipo = tp;
+      if (ld >= pg) { book.status = 'lido'; book.completedYear = new Date().getFullYear(); }
+      else if (ld > 0) { book.status = 'lendo'; book.completedYear = null; }
+      else { book.status = 'quero_ler'; book.completedYear = null; }
       salvarLivros();
-      closeTypeEditor();
-      navegar(typeBack);
-    }
-
-    function closeTypeEditor() {
-      document.getElementById('type-overlay').style.display = 'none';
-      document.getElementById('type-select').value = '';
-      editingTypeId = null;
-      typeBack = 'biblioteca';
+      navegar(back);
     }
 
     navegar('dashboard');
