@@ -181,8 +181,7 @@
     }, 60 * 1000);
     let selectedYear = new Date().getFullYear();
     let selectedTab = 'lendo';
-    let groupBy = false;
-    let groupType = 'genero';
+    let groupType = 'none';
     let selectedCategory = 'all';
 
     function salvarLivros() { localStorage.setItem('livros', JSON.stringify(livros)); }
@@ -626,15 +625,12 @@
       const cy = new Date().getFullYear();
       if (selectedYear === cy && (selectedTab === 'lendo' || selectedTab === 'quero')) {
         div.style = 'display:flex; gap:0.5rem; align-items:center;';
-        const groupOpts = `<option value="genero" ${groupType==='genero'?'selected':''}>Gênero</option>`;
-        let html = `
-          <label style="display:flex;align-items:center;gap:0.25rem;">
-            <input type="checkbox" ${groupBy?'checked':''} onchange="toggleGroupBy(this.checked)">
-            Agrupar
-          </label>
-          <select style="width:auto" onchange="setGroupType(this.value)">${groupOpts}</select>
-        `;
-        if (groupBy && groupType === 'genero') {
+        const groupOpts = [
+          `<option value="none" ${groupType==='none'?'selected':''}>---</option>`,
+          `<option value="genero" ${groupType==='genero'?'selected':''}>Gênero</option>`
+        ].join('');
+        let html = `Agrupar <select style="width:auto" onchange="setGroupType(this.value)">${groupOpts}</select>`;
+        if (groupType === 'genero') {
           const status = selectedTab === 'lendo' ? 'lendo' : 'quero_ler';
           const categories = Array.from(new Set(livros
             .filter(b => b.status === status && b.year === cy)
@@ -657,13 +653,6 @@
     }
 
     function setCategoryFilter(val) { selectedCategory = val; renderBooks(); }
-
-    function toggleGroupBy(val) {
-      groupBy = val;
-      selectedCategory = 'all';
-      renderGroupToggle();
-      renderBooks();
-    }
 
     function setTab(t) {
       selectedTab = t;
@@ -717,11 +706,11 @@
       } else {
         list = livros.filter(b => b.status==='lido' && b.completedYear===selectedYear);
       }
-      if (groupBy && groupType === 'genero' && selectedCategory !== 'all') {
+      if (groupType === 'genero' && selectedCategory !== 'all') {
         list = list.filter(b => (b.categoria || 'Sem categoria') === selectedCategory);
       }
       if (!list.length) { container.innerHTML = '<p>Nenhum livro.</p>'; return; }
-      if (groupBy && groupType === 'genero' && (selectedTab === 'lendo' || selectedTab === 'quero')) {
+      if (groupType === 'genero' && (selectedTab === 'lendo' || selectedTab === 'quero')) {
         container.className = '';
         const groups = {};
         list.forEach(b => {
