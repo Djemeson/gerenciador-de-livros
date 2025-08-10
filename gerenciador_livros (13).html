@@ -182,6 +182,7 @@
     let selectedYear = new Date().getFullYear();
     let selectedTab = 'lendo';
     let groupByCategory = false;
+    let selectedCategory = 'all';
 
     function salvarLivros() { localStorage.setItem('livros', JSON.stringify(livros)); }
     function formatDate(dateStr) {
@@ -600,6 +601,7 @@
     function changeYear(val) {
       selectedYear = val === 'all' ? 'all' : parseInt(val);
       if (selectedYear === new Date().getFullYear()) selectedTab = 'lendo';
+      selectedCategory = 'all';
       renderTabs();
       renderGroupToggle();
       renderBooks();
@@ -622,15 +624,33 @@
       if (!div) return;
       const cy = new Date().getFullYear();
       if (selectedYear === cy && (selectedTab === 'lendo' || selectedTab === 'quero')) {
-        div.innerHTML = `<label><input type="checkbox" ${groupByCategory?'checked':''} onchange="toggleGroupByCategory(this.checked)"> Agrupar por categoria</label>`;
+        const status = selectedTab === 'lendo' ? 'lendo' : 'quero_ler';
+        const categories = Array.from(new Set(livros
+          .filter(b => b.status === status && b.year === cy)
+          .map(b => b.categoria || 'Sem categoria'))).sort();
+        const opts = ['<option value="all">Todos</option>', ...categories.map(c => `<option value="${c}" ${selectedCategory===c?'selected':''}>${c}</option>`)].join('');
+        div.style = 'display:flex; gap:0.5rem; align-items:center;';
+        div.innerHTML = `
+          <label><input type="checkbox" ${groupByCategory?'checked':''} onchange="toggleGroupByCategory(this.checked)"> Agrupar por categoria</label>
+          <select style="width:auto" onchange="setCategoryFilter(this.value)">${opts}</select>
+        `;
       } else {
         div.innerHTML = '';
+        div.style = '';
       }
     }
 
+    function setCategoryFilter(val) { selectedCategory = val; renderBooks(); }
+
     function toggleGroupByCategory(val) { groupByCategory = val; renderBooks(); }
 
-    function setTab(t) { selectedTab = t; renderTabs(); renderGroupToggle(); renderBooks(); }
+    function setTab(t) {
+      selectedTab = t;
+      selectedCategory = 'all';
+      renderTabs();
+      renderGroupToggle();
+      renderBooks();
+    }
 
     function appendBookCard(parent, b) {
       const isAudio = b.tipo === 'Audiobook';
@@ -675,6 +695,9 @@
         else list = livros.filter(b => b.status==='lido' && b.completedYear===cy);
       } else {
         list = livros.filter(b => b.status==='lido' && b.completedYear===selectedYear);
+      }
+      if (selectedCategory !== 'all') {
+        list = list.filter(b => (b.categoria || 'Sem categoria') === selectedCategory);
       }
       if (!list.length) { container.innerHTML = '<p>Nenhum livro.</p>'; return; }
       if (groupByCategory && (selectedTab === 'lendo' || selectedTab === 'quero')) {
