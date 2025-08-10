@@ -45,6 +45,38 @@
     .reading-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:0.5rem; }
     .reading-card { display:flex; flex-direction:column; align-items:center; text-align:center; cursor:pointer; }
     .reading-card img { width:100%; height:160px; object-fit:cover; border-radius:0.25rem; }
+    .reading-card .cover-wrapper { position:relative; width:100%; margin-bottom:0.5rem; }
+    .reading-card .cover-wrapper .cover-placeholder { margin-bottom:0; }
+    .meta-bookmark {
+      position:absolute;
+      top:-8px;
+      left:8px;
+      width:24px;
+      height:72px;
+      background:linear-gradient(to bottom,#f5e3a1 0%,#ffd700 50%,#b8860b 100%);
+      color:#fff;
+      font-weight:bold;
+      font-size:0.55rem;
+      letter-spacing:1px;
+      writing-mode:vertical-rl;
+      text-orientation:upright;
+      text-align:center;
+      padding:8px 0 6px;
+      border-radius:2px 2px 4px 4px;
+      box-shadow:2px 4px 6px rgba(0,0,0,0.3);
+      transform-origin:top;
+      transform:perspective(200px) rotateX(15deg);
+    }
+    .meta-bookmark::before {
+      content:"";
+      position:absolute;
+      top:-4px;
+      left:0;
+      width:100%;
+      height:6px;
+      background:linear-gradient(to bottom,#d4af37,#b8860b);
+      border-radius:2px 2px 0 0;
+    }
     .cover-placeholder { width:100%; height:160px; background:rgba(0,0,0,0.2); color:#fff; display:flex; align-items:center; justify-content:center; border-radius:0.25rem; padding:0.25rem; text-align:center; margin-bottom:0.5rem; }
     .reading-card .progress-bar { width:100%; margin:0.25rem 0; }
     .reading-card .update-btn { width:100%; margin-top:0.25rem; }
@@ -365,16 +397,19 @@
       if (reading.length) {
         const items = reading.map(b => {
           const pc = Math.round((b.lidas / b.paginas) * 100);
+          const isMeta = metaAnnual.includes(b.id);
+          const metaIcon = isMeta ? `<div class=\"meta-bookmark\">Meta</div>` : '';
           const cover = b.capa
             ? `<img src=\"${b.capa}\" alt=\"Capa de ${b.titulo}\">`
             : `<div class=\"cover-placeholder\">${b.titulo}</div>`;
+          const coverWrapper = `<div class=\"cover-wrapper\">${metaIcon}${cover}</div>`;
           return `
             <div class=\"reading-card\" onclick=\"mostrarHistorico(${b.id},'dashboard')\">
-              ${cover}
+              ${coverWrapper}
               <div>${b.lidas}/${b.paginas} (${pc}%)</div>
               ${b.tipo ? `<div>${b.tipo}</div>` : ''}
-              <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
-              <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">Atualizar</button>
+              <div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width:${pc}%\"></div></div>
+              <button class=\"update-btn\" onclick=\"event.stopPropagation();showModal(${b.id});\">Atualizar</button>
             </div>
           `;
         }).join('');
