@@ -102,6 +102,8 @@
     .tab.active { background:var(--nav-bg); color:#fff; border-color:var(--nav-bg); }
     .dashboard-columns { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
     .dashboard-left, .dashboard-right { display:flex; flex-direction:column; gap:1rem; }
+    .category-group { margin-bottom:1rem; }
+    .category-group h3 { margin-bottom:0.5rem; border-left:4px solid var(--nav-bg); padding-left:0.5rem; }
   </style>
 </head>
 <body>
@@ -654,7 +656,6 @@
               ${start}
               ${end}
               <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">${updateTxt}</button>
-              <button class="update-btn" onclick="event.stopPropagation();editarLivro(${b.id});">Editar</button>
             </div>
           `;
       parent.appendChild(div);
@@ -664,7 +665,6 @@
       const container = document.getElementById('booksContainer');
       if (!container) return;
       container.innerHTML = '';
-      if (viewMode === 'grid') container.className = 'grid ' + gridSize; else container.className = '';
       let list = [];
       const cy = new Date().getFullYear();
       if (selectedYear === 'all') {
@@ -678,18 +678,26 @@
       }
       if (!list.length) { container.innerHTML = '<p>Nenhum livro.</p>'; return; }
       if (groupByCategory && (selectedTab === 'lendo' || selectedTab === 'quero')) {
+        container.className = '';
         const groups = {};
         list.forEach(b => {
           const cat = b.categoria || 'Sem categoria';
           (groups[cat] = groups[cat] || []).push(b);
         });
         Object.keys(groups).sort().forEach(cat => {
+          const groupDiv = document.createElement('div');
+          groupDiv.className = 'category-group';
           const h = document.createElement('h3');
           h.textContent = cat;
-          container.appendChild(h);
-          groups[cat].forEach(b => appendBookCard(container, b));
+          groupDiv.appendChild(h);
+          const booksDiv = document.createElement('div');
+          if (viewMode === 'grid') booksDiv.className = 'grid ' + gridSize;
+          groupDiv.appendChild(booksDiv);
+          groups[cat].forEach(b => appendBookCard(booksDiv, b));
+          container.appendChild(groupDiv);
         });
       } else {
+        if (viewMode === 'grid') container.className = 'grid ' + gridSize; else container.className = '';
         list.forEach(b => appendBookCard(container, b));
       }
     }
