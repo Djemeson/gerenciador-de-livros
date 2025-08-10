@@ -413,7 +413,15 @@
             <p>Restante: ${rem} pág</p>
           </div>`;
       }
-      const reading = livros.filter(b => b.lidas > 0 && b.lidas < b.paginas);
+      const getLastUpdate = b => {
+        if (b.history && b.history.length) {
+          return b.history[b.history.length - 1].date;
+        }
+        return b.startDate || '1970-01-01';
+      };
+      const reading = livros
+        .filter(b => b.lidas > 0 && b.lidas < b.paginas)
+        .sort((a, b) => new Date(getLastUpdate(b)) - new Date(getLastUpdate(a)));
       let readingCard = '';
       if (reading.length) {
         const items = reading.map(b => {
