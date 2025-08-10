@@ -221,13 +221,56 @@
     function setViewMode(m) {
       viewMode = m;
       localStorage.setItem('viewMode', m);
+      renderSizeIcons();
       renderBooks();
       const toggle = document.querySelector('.view-toggle');
       if (toggle) {
-        toggle.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+        toggle.querySelectorAll('button[data-mode]').forEach(btn => btn.classList.remove('active'));
         const btn = toggle.querySelector(`button[data-mode="${m}"]`);
         if (btn) btn.classList.add('active');
       }
+    }
+
+    function setGridSize(s) {
+      gridSize = s;
+      localStorage.setItem('gridSize', s);
+      renderSizeIcons();
+      renderBooks();
+    }
+
+    function renderSizeIcons() {
+      const div = document.getElementById('sizeOptions');
+      if (!div) return;
+      if (viewMode !== 'grid') { div.innerHTML = ''; return; }
+      div.className = 'view-size';
+      div.innerHTML = `
+        <button class="${gridSize==='small'?'active':''}" onclick="setGridSize('small')">
+          <svg viewBox="0 0 24 24">
+            <rect x="2" y="2" width="6" height="6"/>
+            <rect x="9" y="2" width="6" height="6"/>
+            <rect x="16" y="2" width="6" height="6"/>
+            <rect x="2" y="9" width="6" height="6"/>
+            <rect x="9" y="9" width="6" height="6"/>
+            <rect x="16" y="9" width="6" height="6"/>
+            <rect x="2" y="16" width="6" height="6"/>
+            <rect x="9" y="16" width="6" height="6"/>
+            <rect x="16" y="16" width="6" height="6"/>
+          </svg>
+        </button>
+        <button class="${gridSize==='medium'?'active':''}" onclick="setGridSize('medium')">
+          <svg viewBox="0 0 24 24">
+            <rect x="2" y="2" width="10" height="10"/>
+            <rect x="12" y="2" width="10" height="10"/>
+            <rect x="2" y="12" width="10" height="10"/>
+            <rect x="12" y="12" width="10" height="10"/>
+          </svg>
+        </button>
+        <button class="${gridSize==='large'?'active':''}" onclick="setGridSize('large')">
+          <svg viewBox="0 0 24 24">
+            <rect x="2" y="2" width="20" height="20"/>
+          </svg>
+        </button>
+      `;
     }
 
     function navegar(p) {
@@ -524,7 +567,6 @@
 
     function carregarBiblioteca() {
       conteudo.innerHTML = '';
-      if (!livros.length) { conteudo.innerHTML = '<p>Nenhum livro.</p>'; return; }
       const top = document.createElement('div');
       top.style = 'margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center;';
       top.innerHTML = `
@@ -532,7 +574,7 @@
         <div class="view-toggle">
           <button data-mode="list" class="${viewMode==='list'?'active':''}" onclick="setViewMode('list')" title="Lista"><span class="material-symbols-outlined">view_list</span></button>
           <button data-mode="grid" class="${viewMode==='grid'?'active':''}" onclick="setViewMode('grid')" title="Grade"><span class="material-symbols-outlined">grid_view</span></button>
-
+          <div id="sizeOptions"></div>
         </div>`;
       conteudo.appendChild(top);
       renderSizeIcons();
@@ -741,9 +783,9 @@
       const r = document.getElementById('resumo').value;
       const c = document.getElementById('capa').value;
       const pg = parseInt(document.getElementById('paginas').value);
-      const ld = parseInt(document.getElementById('lidas').value);
+      const ld = parseInt(document.getElementById('lidas').value) || 0;
       const tp = document.getElementById('tipo').value;
-      if (!t || !pg || isNaN(ld) || !tp) return alert('Preencha todos os campos!');
+      if (!t || !pg || !tp) return alert('Preencha todos os campos!');
       const cy = new Date().getFullYear();
       let status = 'quero_ler', year = cy, completedYear = null;
       if (ld >= pg) { status = 'lido'; completedYear = cy; }
