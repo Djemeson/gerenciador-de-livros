@@ -25,9 +25,19 @@
     button.primary { background:#22c55e; color:white; border:none; font-weight:bold; cursor:pointer; }
     button.primary:hover { background:#16a34a; }
     .history-item { margin-bottom:0.5rem; font-size:0.9rem; }
-    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1rem; }
+    .grid { display:grid; gap:1rem; }
+    .grid.small { grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); }
+    .grid.medium { grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); }
+    .grid.large { grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); }
     .grid .card { margin-bottom:0; }
     .card img { width:100%; object-fit:cover; margin-bottom:0.5rem; border-radius:0.25rem; }
+    .grid .card img, .grid .cover-placeholder { aspect-ratio:2/3; height:auto; }
+    .grid .card img { object-fit:contain; }
+    .grid .update-btn { width:100%; }
+    .view-size { display:flex; gap:0.25rem; }
+    .view-size button { background:transparent; border:none; cursor:pointer; padding:0.2rem; border-radius:0.25rem; }
+    .view-size button.active { background:var(--progress-bg); }
+    .view-size svg { width:16px; height:16px; fill:var(--text-color); }
     .card.list { display:flex; align-items:center; gap:0.5rem; }
     .card.list img { width:50px; height:75px; margin-bottom:0; }
     .card.list .details { flex:1; }
@@ -69,9 +79,9 @@
     .goal-count { display:flex; align-items:center; gap:0.5rem; }
     .goal-count input { width:60px; margin:0; }
     .year-select { width:auto; margin-right:0.5rem; }
-    .tabs { display:flex; gap:0.5rem; margin-bottom:1rem; }
-    .tab { padding:0.4rem 0.8rem; background:var(--progress-bg); border:none; border-radius:0.25rem 0.25rem 0 0; cursor:pointer; }
-    .tab.active { background:var(--nav-bg); color:#fff; }
+    .tabs { display:flex; gap:0.25rem; margin-bottom:0.5rem; width:50%; }
+    .tab { padding:0.2rem 0.5rem; background:transparent; border:1px solid var(--progress-bg); border-radius:0.25rem; cursor:pointer; font-size:0.8rem; }
+    .tab.active { background:var(--nav-bg); color:#fff; border-color:var(--nav-bg); }
     .dashboard-columns { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
     .dashboard-left, .dashboard-right { display:flex; flex-direction:column; gap:1rem; }
   </style>
@@ -137,11 +147,17 @@
       { id:'annual_challenge', name:'Desafio Anual', description:'Leia 20 livros até o final do ano!', pagesPerDay:17 }
     ];
     let livros = JSON.parse(localStorage.getItem('livros')) || [];
-    livros = livros.map(b => ({ ...b, history: b.history || [], resumo: b.resumo || '' }));
+    livros = livros.map(b => {
+      const history = b.history || [];
+      const startDate = b.startDate || (history.length ? history[0].date : null);
+      const endDate = b.endDate || (b.status === 'lido' && history.length ? history[history.length - 1].date : null);
+      return { ...b, history, resumo: b.resumo || '', startDate, endDate };
+    });
     let metaAnnual = JSON.parse(localStorage.getItem('metaAnnual')) || [];
     let metaAnnualCount = parseInt(localStorage.getItem('metaAnnualCount')) || metaAnnual.length;
     let selectingSlot = null;
     let viewMode = localStorage.getItem('viewMode') || 'list';
+    let gridSize = localStorage.getItem('gridSize') || 'large';
     const conteudo = document.getElementById('conteudo');
     document.getElementById('today').textContent = new Date().toLocaleDateString();
     let currentDate = new Date().toISOString().split('T')[0];
@@ -161,6 +177,10 @@
     let typeBack = 'biblioteca';
 
     function salvarLivros() { localStorage.setItem('livros', JSON.stringify(livros)); }
+    function formatDate(dateStr) {
+      const [year, month, day] = dateStr.split('-');
+      return `${day}/${month}/${year.slice(2)}`;
+    }
     function migrateBooksForNewYear() {
       const cy = new Date().getFullYear();
       livros.forEach(b => {
@@ -236,17 +256,25 @@
       const delta = np - old;
       const pct = Math.round((np / book.paginas) * 100);
       book.lidas = Math.min(np, book.paginas);
+      if (book.lidas > 0 && !book.startDate) {
+        book.startDate = date;
+      } else if (book.lidas === 0) {
+        book.startDate = null;
+      }
       book.history.push({ date, pages: book.lidas, percent: pct, delta, timestamp: Date.now() });
       if (book.lidas >= book.paginas) {
         book.status = 'lido';
         book.completedYear = new Date().getFullYear();
         book.lidas = book.paginas;
+        book.endDate = book.endDate || date;
       } else if (book.lidas > 0) {
         book.status = 'lendo';
         book.year = new Date().getFullYear();
+        book.endDate = null;
       } else {
         book.status = 'quero_ler';
         book.year = new Date().getFullYear();
+        book.endDate = null;
       }
       salvarLivros(); hideModal(); navegar('biblioteca');
     }
@@ -267,12 +295,12 @@
       }));
       const selected = livros.filter(b => metaAnnual.includes(b.id));
       const remaining = selected.reduce((sum, b) => sum + Math.max(0, b.paginas - b.lidas), 0);
-      const annualPagesRead = selected.reduce((sum, b) => sum + Math.min(b.lidas, b.paginas), 0);
       const endYear = new Date(hoje.getFullYear(), 11, 31);
       const msPerDay = 1000 * 60 * 60 * 24;
       const daysLeft = Math.ceil((endYear - hoje) / msPerDay) + 1;
       const perDay = daysLeft > 0 ? Math.ceil(remaining / daysLeft) : remaining;
-      document.getElementById('metaAnualPaginas').textContent = `${annualPagesRead} pág lidas · ${perDay} pág/dia`;
+      const trophy = daily >= perDay ? ' 🏆' : '';
+      document.getElementById('metaAnualPaginas').textContent = `${daily} pág lidas · ${perDay} pág/dia${trophy}`;
       const desafioId = localStorage.getItem('desafio') || desafios[0].id;
       const d = desafios.find(x => x.id === desafioId);
       const dm = d.pagesPerDay;
@@ -485,8 +513,10 @@
         <div class="view-toggle">
           <button data-mode="list" class="${viewMode==='list'?'active':''}" onclick="setViewMode('list')" title="Lista"><span class="material-symbols-outlined">view_list</span></button>
           <button data-mode="grid" class="${viewMode==='grid'?'active':''}" onclick="setViewMode('grid')" title="Grade"><span class="material-symbols-outlined">grid_view</span></button>
+
         </div>`;
       conteudo.appendChild(top);
+      renderSizeIcons();
       const tabsDiv = document.createElement('div');
       tabsDiv.id = 'tabsContainer';
       conteudo.appendChild(tabsDiv);
@@ -533,7 +563,7 @@
       const container = document.getElementById('booksContainer');
       if (!container) return;
       container.innerHTML = '';
-      if (viewMode === 'grid') container.className = 'grid'; else container.className = '';
+      if (viewMode === 'grid') container.className = 'grid ' + gridSize; else container.className = '';
       let list = [];
       const cy = new Date().getFullYear();
       if (selectedYear === 'all') {
@@ -555,6 +585,8 @@
         const cover = b.capa
           ? `<img src="${b.capa}" alt="Capa de ${b.titulo}">`
           : `<div class="cover-placeholder">${b.titulo}</div>`;
+        const start = b.startDate ? `<p>Início: ${formatDate(b.startDate)}</p>` : '';
+        const end = b.endDate ? `<p>Fim: ${formatDate(b.endDate)}</p>` : '';
         const tipo = b.tipo
           ? `<p>Tipo: ${b.tipo}</p>`
           : `<button class="update-btn" onclick="event.stopPropagation();editarTipo(${b.id});">Definir tipo</button>`;
@@ -564,6 +596,8 @@
             <p>${b.lidas}/${b.paginas} (${pc}%)</p>
             <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
             ${tipo}
+            ${start}
+            ${end}
             <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">Atualizar progresso</button>
           </div>
         `;
@@ -577,7 +611,7 @@
       const cover = book.capa ? `<img src="${book.capa}" alt="Capa de ${book.titulo}">` : '';
       let html = `
         <div class="card">
-          <button onclick="navegar('${back}')" style="background:transparent;color:var(--text-color);border:none;margin-bottom:1rem">◀ Voltar</button>
+          <button onclick="navegar('${back}')" style="background:transparent;color:var(--text-color);border:none;margin-bottom:1rem;display:block;width:auto;padding:0;text-align:left">◀ Voltar</button>
           <div class="history-layout">
             <div class="history-info">
               ${cover}
@@ -587,6 +621,8 @@
                 ${book.editora ? `<p><strong>Editora:</strong> ${book.editora}</p>` : ''}
                 ${book.isbn ? `<p><strong>ISBN:</strong> ${book.isbn}</p>` : ''}
                 ${book.tipo ? `<p><strong>Tipo:</strong> ${book.tipo}</p>` : ''}
+                ${book.startDate ? `<p><strong>Início:</strong> ${formatDate(book.startDate)}</p>` : ''}
+                ${book.endDate ? `<p><strong>Fim:</strong> ${formatDate(book.endDate)}</p>` : ''}
               </div>
             </div>
             <div class="history-synopsis">
@@ -693,11 +729,13 @@
       let status = 'quero_ler', year = cy, completedYear = null;
       if (ld >= pg) { status = 'lido'; completedYear = cy; }
       else if (ld > 0) { status = 'lendo'; }
-      const book = { id: Date.now(), titulo: t, autor: a, editora: e, resumo: r, isbn, paginas: pg, lidas: ld, capa: c, tipo: tp, history: [], status, year, completedYear };
+      const book = { id: Date.now(), titulo: t, autor: a, editora: e, resumo: r, isbn, paginas: pg, lidas: ld, capa: c, tipo: tp, history: [], status, year, completedYear, startDate: null, endDate: null };
       if (ld > 0) {
         const date = new Date().toISOString().split('T')[0];
         const pct  = Math.round((ld/pg)*100);
         book.history.push({ date, pages: ld, percent: pct, delta: ld, timestamp: Date.now() });
+        book.startDate = date;
+        if (ld >= pg) book.endDate = date;
       }
       livros.push(book);
       salvarLivros();
