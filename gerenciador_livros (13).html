@@ -37,7 +37,7 @@
     .view-size { display:flex; gap:0.25rem; }
     .view-size button { background:transparent; border:none; cursor:pointer; padding:0.2rem; border-radius:0.25rem; }
     .view-size button.active { background:var(--progress-bg); }
-    .view-size svg { width:16px; height:16px; fill:var(--text-color); }
+    .view-size .material-symbols-outlined { font-size:16px; color:var(--text-color); }
     .card.list { display:flex; align-items:center; gap:0.5rem; }
     .card.list img { width:50px; height:75px; margin-bottom:0; }
     .card.list .details { flex:1; }
@@ -73,7 +73,8 @@
     .history-details { margin-top:0; }
     .history-synopsis { flex:1; }
     .history-reading { margin-top:1rem; }
-    .view-toggle { display:flex; gap:0.3rem; }
+    .view-toggle { display:flex; flex-direction:column; gap:0.3rem; align-items:flex-end; }
+    .view-mode { display:flex; gap:0.3rem; }
     .view-toggle button { background:transparent; border:none; cursor:pointer; padding:0.2rem; font-size:1.2rem; border-radius:0.25rem; }
     .view-toggle button.active { background:var(--nav-bg); color:#fff; }
     #modal-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; }
@@ -244,31 +245,14 @@
       if (viewMode !== 'grid') { div.innerHTML = ''; return; }
       div.className = 'view-size';
       div.innerHTML = `
-        <button class="${gridSize==='small'?'active':''}" onclick="setGridSize('small')">
-          <svg viewBox="0 0 24 24">
-            <rect x="2" y="2" width="6" height="6"/>
-            <rect x="9" y="2" width="6" height="6"/>
-            <rect x="16" y="2" width="6" height="6"/>
-            <rect x="2" y="9" width="6" height="6"/>
-            <rect x="9" y="9" width="6" height="6"/>
-            <rect x="16" y="9" width="6" height="6"/>
-            <rect x="2" y="16" width="6" height="6"/>
-            <rect x="9" y="16" width="6" height="6"/>
-            <rect x="16" y="16" width="6" height="6"/>
-          </svg>
+        <button class="${gridSize==='small'?'active':''}" onclick="setGridSize('small')" title="Pequeno">
+          <span class="material-symbols-outlined">grid_view</span>
         </button>
-        <button class="${gridSize==='medium'?'active':''}" onclick="setGridSize('medium')">
-          <svg viewBox="0 0 24 24">
-            <rect x="2" y="2" width="10" height="10"/>
-            <rect x="12" y="2" width="10" height="10"/>
-            <rect x="2" y="12" width="10" height="10"/>
-            <rect x="12" y="12" width="10" height="10"/>
-          </svg>
+        <button class="${gridSize==='medium'?'active':''}" onclick="setGridSize('medium')" title="Médio">
+          <span class="material-symbols-outlined">view_module</span>
         </button>
-        <button class="${gridSize==='large'?'active':''}" onclick="setGridSize('large')">
-          <svg viewBox="0 0 24 24">
-            <rect x="2" y="2" width="20" height="20"/>
-          </svg>
+        <button class="${gridSize==='large'?'active':''}" onclick="setGridSize('large')" title="Grande">
+          <span class="material-symbols-outlined">view_comfy</span>
         </button>
       `;
     }
@@ -572,8 +556,10 @@
       top.innerHTML = `
         <select id="yearSelect" class="year-select" onchange="changeYear(this.value)"></select>
         <div class="view-toggle">
-          <button data-mode="list" class="${viewMode==='list'?'active':''}" onclick="setViewMode('list')" title="Lista"><span class="material-symbols-outlined">view_list</span></button>
-          <button data-mode="grid" class="${viewMode==='grid'?'active':''}" onclick="setViewMode('grid')" title="Grade"><span class="material-symbols-outlined">grid_view</span></button>
+          <div class="view-mode">
+            <button data-mode="list" class="${viewMode==='list'?'active':''}" onclick="setViewMode('list')" title="Lista"><span class="material-symbols-outlined">view_list</span></button>
+            <button data-mode="grid" class="${viewMode==='grid'?'active':''}" onclick="setViewMode('grid')" title="Grade"><span class="material-symbols-outlined">grid_view</span></button>
+          </div>
           <div id="sizeOptions"></div>
         </div>`;
       conteudo.appendChild(top);
@@ -651,6 +637,7 @@
         const tipo = b.tipo
           ? `<p>Tipo: ${b.tipo}</p>`
           : `<button class="update-btn" onclick="event.stopPropagation();editarTipo(${b.id});">Definir tipo</button>`;
+        const updateTxt = (viewMode === 'grid' && gridSize === 'small') ? 'Atualizar' : 'Atualizar progresso';
         div.innerHTML = `
           ${cover}
           <div class="details">
@@ -659,7 +646,7 @@
             ${tipo}
             ${start}
             ${end}
-            <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">Atualizar progresso</button>
+            <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">${updateTxt}</button>
           </div>
         `;
         container.appendChild(div);
