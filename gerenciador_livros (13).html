@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Biblioteca Pessoal</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
   <style>
     :root { --bg-color:#f0fdf4; --text-color:#333; --nav-bg:#22c55e; --card-bg:white; --card-shadow:rgba(0,0,0,0.06); --progress-bg:#e5e7eb; --progress-fill:#22c55e; }
     [data-theme="dark"] { --bg-color:#111827; --text-color:#e5e7eb; --nav-bg:#1f2937; --card-bg:#1e293b; --card-shadow:rgba(0,0,0,0.4); --progress-bg:#374151; --progress-fill:#10b981; }
@@ -53,7 +54,9 @@
     .history-details { margin-top:0; }
     .history-synopsis { flex:1; }
     .history-reading { margin-top:1rem; }
-    .view-mode-select { width:auto; padding:0.2rem; margin-bottom:0; }
+    .view-toggle { display:flex; gap:0.3rem; }
+    .view-toggle button { background:transparent; border:none; cursor:pointer; padding:0.2rem; font-size:1.2rem; border-radius:0.25rem; }
+    .view-toggle button.active { background:var(--nav-bg); color:#fff; }
     #modal-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; }
     #modal { background:var(--card-bg); padding:0.5rem; border-radius:0.25rem; width:200px; box-shadow:0 2px 8px var(--card-shadow); }
     .goal-slots { display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:1rem; }
@@ -196,41 +199,16 @@
       localStorage.setItem('metaAnnualCount', metaAnnualCount);
     }
     function alternarTema() { const t = document.documentElement.getAttribute('data-theme'); const n = t === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', n); localStorage.setItem('tema', n); }
-    function setViewMode(m) { viewMode = m; localStorage.setItem('viewMode', m); renderSizeIcons(); renderBooks(); }
-    function setGridSize(s) { gridSize = s; localStorage.setItem('gridSize', s); renderSizeIcons(); renderBooks(); }
-    function renderSizeIcons() {
-      const div = document.getElementById('sizeOptions');
-      if (!div) return;
-      if (viewMode !== 'grid') { div.innerHTML = ''; return; }
-      div.className = 'view-size';
-      div.innerHTML = `
-        <button class="${gridSize==='small'?'active':''}" onclick="setGridSize('small')">
-          <svg viewBox="0 0 24 24">
-            <rect x="2" y="2" width="6" height="6"/>
-            <rect x="9" y="2" width="6" height="6"/>
-            <rect x="16" y="2" width="6" height="6"/>
-            <rect x="2" y="9" width="6" height="6"/>
-            <rect x="9" y="9" width="6" height="6"/>
-            <rect x="16" y="9" width="6" height="6"/>
-            <rect x="2" y="16" width="6" height="6"/>
-            <rect x="9" y="16" width="6" height="6"/>
-            <rect x="16" y="16" width="6" height="6"/>
-          </svg>
-        </button>
-        <button class="${gridSize==='medium'?'active':''}" onclick="setGridSize('medium')">
-          <svg viewBox="0 0 24 24">
-            <rect x="2" y="2" width="10" height="10"/>
-            <rect x="12" y="2" width="10" height="10"/>
-            <rect x="2" y="12" width="10" height="10"/>
-            <rect x="12" y="12" width="10" height="10"/>
-          </svg>
-        </button>
-        <button class="${gridSize==='large'?'active':''}" onclick="setGridSize('large')">
-          <svg viewBox="0 0 24 24">
-            <rect x="2" y="2" width="20" height="20"/>
-          </svg>
-        </button>
-      `;
+    function setViewMode(m) {
+      viewMode = m;
+      localStorage.setItem('viewMode', m);
+      renderBooks();
+      const toggle = document.querySelector('.view-toggle');
+      if (toggle) {
+        toggle.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+        const btn = toggle.querySelector(`button[data-mode="${m}"]`);
+        if (btn) btn.classList.add('active');
+      }
     }
 
     function navegar(p) {
@@ -532,12 +510,10 @@
       top.style = 'margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center;';
       top.innerHTML = `
         <select id="yearSelect" class="year-select" onchange="changeYear(this.value)"></select>
-        <div style="display:flex; align-items:center; gap:0.5rem;">
-          <select class="view-mode-select" onchange="setViewMode(this.value)">
-            <option value="list" ${viewMode==='list'?'selected':''}>Lista</option>
-            <option value="grid" ${viewMode==='grid'?'selected':''}>Grade</option>
-          </select>
-          <div id="sizeOptions"></div>
+        <div class="view-toggle">
+          <button data-mode="list" class="${viewMode==='list'?'active':''}" onclick="setViewMode('list')" title="Lista"><span class="material-symbols-outlined">view_list</span></button>
+          <button data-mode="grid" class="${viewMode==='grid'?'active':''}" onclick="setViewMode('grid')" title="Grade"><span class="material-symbols-outlined">grid_view</span></button>
+
         </div>`;
       conteudo.appendChild(top);
       renderSizeIcons();
