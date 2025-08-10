@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Biblioteca Pessoal</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
   <style>
     :root { --bg-color:#f0fdf4; --text-color:#333; --nav-bg:#22c55e; --card-bg:white; --card-shadow:rgba(0,0,0,0.06); --progress-bg:#e5e7eb; --progress-fill:#22c55e; }
     [data-theme="dark"] { --bg-color:#111827; --text-color:#e5e7eb; --nav-bg:#1f2937; --card-bg:#1e293b; --card-shadow:rgba(0,0,0,0.4); --progress-bg:#374151; --progress-fill:#10b981; }
@@ -482,8 +483,8 @@
       top.innerHTML = `
         <select id="yearSelect" class="year-select" onchange="changeYear(this.value)"></select>
         <div class="view-toggle">
-          <button data-mode="list" class="${viewMode==='list'?'active':''}" onclick="setViewMode('list')" title="Lista">📃</button>
-          <button data-mode="grid" class="${viewMode==='grid'?'active':''}" onclick="setViewMode('grid')" title="Grade">🔳</button>
+          <button data-mode="list" class="${viewMode==='list'?'active':''}" onclick="setViewMode('list')" title="Lista"><span class="material-symbols-outlined">view_list</span></button>
+          <button data-mode="grid" class="${viewMode==='grid'?'active':''}" onclick="setViewMode('grid')" title="Grade"><span class="material-symbols-outlined">grid_view</span></button>
         </div>`;
       conteudo.appendChild(top);
       const tabsDiv = document.createElement('div');
