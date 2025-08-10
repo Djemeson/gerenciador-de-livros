@@ -171,7 +171,7 @@
       const history = b.history || [];
       const startDate = b.startDate || (history.length ? history[0].date : null);
       const endDate = b.endDate || (b.status === 'lido' && history.length ? history[history.length - 1].date : null);
-      return { ...b, history, resumo: b.resumo || '', startDate, endDate };
+      return { ...b, history, resumo: b.resumo || '', categoria: b.categoria || '', startDate, endDate };
     });
     let metaAnnual = JSON.parse(localStorage.getItem('metaAnnual')) || [];
     let metaAnnualCount = parseInt(localStorage.getItem('metaAnnualCount')) || metaAnnual.length;
@@ -193,6 +193,7 @@
     }, 60 * 1000);
     let selectedYear = new Date().getFullYear();
     let selectedTab = 'lendo';
+    let groupByCategory = false;
     let editingTypeId = null;
     let typeBack = 'biblioteca';
 
@@ -588,11 +589,15 @@
       const tabsDiv = document.createElement('div');
       tabsDiv.id = 'tabsContainer';
       conteudo.appendChild(tabsDiv);
+      const groupDiv = document.createElement('div');
+      groupDiv.id = 'groupContainer';
+      conteudo.appendChild(groupDiv);
       const booksDiv = document.createElement('div');
       booksDiv.id = 'booksContainer';
       conteudo.appendChild(booksDiv);
       populateYearSelect();
       renderTabs();
+      renderGroupToggle();
       renderBooks();
     }
 
@@ -610,6 +615,7 @@
       selectedYear = val === 'all' ? 'all' : parseInt(val);
       if (selectedYear === new Date().getFullYear()) selectedTab = 'lendo';
       renderTabs();
+      renderGroupToggle();
       renderBooks();
     }
 
@@ -625,7 +631,51 @@
       `;
     }
 
-    function setTab(t) { selectedTab = t; renderTabs(); renderBooks(); }
+    function renderGroupToggle() {
+      const div = document.getElementById('groupContainer');
+      if (!div) return;
+      const cy = new Date().getFullYear();
+      if (selectedYear === cy && (selectedTab === 'lendo' || selectedTab === 'quero')) {
+        div.innerHTML = `<label><input type="checkbox" ${groupByCategory?'checked':''} onchange="toggleGroupByCategory(this.checked)"> Agrupar por categoria</label>`;
+      } else {
+        div.innerHTML = '';
+      }
+    }
+
+    function toggleGroupByCategory(val) { groupByCategory = val; renderBooks(); }
+
+    function setTab(t) { selectedTab = t; renderTabs(); renderGroupToggle(); renderBooks(); }
+
+    function appendBookCard(parent, b) {
+      const isAudio = b.tipo === 'Audiobook';
+      const pc = isAudio ? b.lidas : Math.round((b.lidas/b.paginas)*100);
+      const div = document.createElement('div');
+      div.className = 'card';
+      if (viewMode === 'list') div.classList.add('list');
+      div.onclick = () => mostrarHistorico(b.id);
+      const cover = b.capa
+        ? `<img src="${b.capa}" alt="Capa de ${b.titulo}">`
+        : `<div class="cover-placeholder">${b.titulo}</div>`;
+      const start = b.startDate ? `<p>Início: ${formatDate(b.startDate)}</p>` : '';
+      const end = b.endDate ? `<p>Fim: ${formatDate(b.endDate)}</p>` : '';
+      const tipo = b.tipo
+        ? `<p>Tipo: ${b.tipo}</p>`
+        : `<button class="update-btn" onclick="event.stopPropagation();editarTipo(${b.id});">Definir tipo</button>`;
+      const updateTxt = (viewMode === 'grid' && gridSize === 'small') ? 'Atualizar' : 'Atualizar progresso';
+      const progressText = isAudio ? `${pc}%` : `${b.lidas}/${b.paginas} (${pc}%)`;
+      div.innerHTML = `
+            ${cover}
+            <div class="details">
+              <p>${progressText}</p>
+              <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
+              ${tipo}
+              ${start}
+              ${end}
+              <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">${updateTxt}</button>
+            </div>
+          `;
+      parent.appendChild(div);
+    }
 
     function renderBooks() {
       const container = document.getElementById('booksContainer');
@@ -644,36 +694,21 @@
         list = livros.filter(b => b.status==='lido' && b.completedYear===selectedYear);
       }
       if (!list.length) { container.innerHTML = '<p>Nenhum livro.</p>'; return; }
+      if (groupByCategory && (selectedTab === 'lendo' || selectedTab === 'quero')) {
+        const groups = {};
         list.forEach(b => {
-          const isAudio = b.tipo === 'Audiobook';
-          const pc = isAudio ? b.lidas : Math.round((b.lidas/b.paginas)*100);
-          const div = document.createElement('div');
-          div.className = 'card';
-          if (viewMode === 'list') div.classList.add('list');
-          div.onclick = () => mostrarHistorico(b.id);
-          const cover = b.capa
-            ? `<img src="${b.capa}" alt="Capa de ${b.titulo}">`
-            : `<div class="cover-placeholder">${b.titulo}</div>`;
-          const start = b.startDate ? `<p>Início: ${formatDate(b.startDate)}</p>` : '';
-          const end = b.endDate ? `<p>Fim: ${formatDate(b.endDate)}</p>` : '';
-          const tipo = b.tipo
-            ? `<p>Tipo: ${b.tipo}</p>`
-            : `<button class="update-btn" onclick="event.stopPropagation();editarTipo(${b.id});">Definir tipo</button>`;
-          const updateTxt = (viewMode === 'grid' && gridSize === 'small') ? 'Atualizar' : 'Atualizar progresso';
-          const progressText = isAudio ? `${pc}%` : `${b.lidas}/${b.paginas} (${pc}%)`;
-          div.innerHTML = `
-            ${cover}
-            <div class="details">
-              <p>${progressText}</p>
-              <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
-              ${tipo}
-              ${start}
-              ${end}
-              <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">${updateTxt}</button>
-            </div>
-          `;
-          container.appendChild(div);
+          const cat = b.categoria || 'Sem categoria';
+          (groups[cat] = groups[cat] || []).push(b);
         });
+        Object.keys(groups).sort().forEach(cat => {
+          const h = document.createElement('h3');
+          h.textContent = cat;
+          container.appendChild(h);
+          groups[cat].forEach(b => appendBookCard(container, b));
+        });
+      } else {
+        list.forEach(b => appendBookCard(container, b));
+      }
     }
 
     function mostrarHistorico(id, back='biblioteca') {
@@ -690,6 +725,7 @@
                 <h2>${book.titulo}</h2>
                 ${book.autor ? `<p><strong>Autor:</strong> ${book.autor}</p>` : ''}
                 ${book.editora ? `<p><strong>Editora:</strong> ${book.editora}</p>` : ''}
+                ${book.categoria ? `<p><strong>Categoria:</strong> ${book.categoria}</p>` : ''}
                 ${book.isbn ? `<p><strong>ISBN:</strong> ${book.isbn}</p>` : ''}
                 ${book.tipo ? `<p><strong>Tipo:</strong> ${book.tipo}</p>` : ''}
                 ${book.startDate ? `<p><strong>Início:</strong> ${formatDate(book.startDate)}</p>` : ''}
@@ -727,6 +763,7 @@
           <input id="titulo" placeholder="Título" />
           <input id="autor" placeholder="Autor" />
           <input id="editora" placeholder="Editora" />
+          <input id="categoria" placeholder="Categoria" />
           <textarea id="resumo" placeholder="Resumo"></textarea>
           <input id="capa" placeholder="URL da capa" />
           <input id="paginas" type="number" placeholder="Páginas" />
@@ -759,6 +796,7 @@
         document.getElementById('titulo').value = info.title || '';
         document.getElementById('autor').value = info.authors ? info.authors.join(', ') : '';
         document.getElementById('editora').value = info.publisher || '';
+        document.getElementById('categoria').value = (info.categories && info.categories[0]) || '';
         document.getElementById('resumo').value = info.description || '';
         document.getElementById('capa').value = (info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail)) || '';
         document.getElementById('paginas').value = info.pageCount || '';
@@ -800,6 +838,7 @@
       const t = document.getElementById('titulo').value;
       const a = document.getElementById('autor').value;
       const e = document.getElementById('editora').value;
+      const cat = document.getElementById('categoria').value;
       const r = document.getElementById('resumo').value;
       const c = document.getElementById('capa').value;
       let pg = parseInt(document.getElementById('paginas').value);
@@ -814,7 +853,7 @@
       let status = 'quero_ler', year = cy, completedYear = null;
       if (ld >= pg) { status = 'lido'; completedYear = cy; }
       else if (ld > 0) { status = 'lendo'; }
-      const book = { id: Date.now(), titulo: t, autor: a, editora: e, resumo: r, isbn, paginas: pg, lidas: ld, capa: c, tipo: tp, history: [], status, year, completedYear, startDate: null, endDate: null };
+      const book = { id: Date.now(), titulo: t, autor: a, editora: e, categoria: cat, resumo: r, isbn, paginas: pg, lidas: ld, capa: c, tipo: tp, history: [], status, year, completedYear, startDate: null, endDate: null };
       if (ld > 0) {
         const date = new Date().toISOString().split('T')[0];
         const pct  = Math.round((ld/pg)*100);
