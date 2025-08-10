@@ -181,7 +181,8 @@
     }, 60 * 1000);
     let selectedYear = new Date().getFullYear();
     let selectedTab = 'lendo';
-    let groupByCategory = false;
+    let groupBy = false;
+    let groupType = 'genero';
     let selectedCategory = 'all';
 
     function salvarLivros() { localStorage.setItem('livros', JSON.stringify(livros)); }
@@ -624,25 +625,45 @@
       if (!div) return;
       const cy = new Date().getFullYear();
       if (selectedYear === cy && (selectedTab === 'lendo' || selectedTab === 'quero')) {
-        const status = selectedTab === 'lendo' ? 'lendo' : 'quero_ler';
-        const categories = Array.from(new Set(livros
-          .filter(b => b.status === status && b.year === cy)
-          .map(b => b.categoria || 'Sem categoria'))).sort();
-        const opts = ['<option value="all">Todos</option>', ...categories.map(c => `<option value="${c}" ${selectedCategory===c?'selected':''}>${c}</option>`)].join('');
         div.style = 'display:flex; gap:0.5rem; align-items:center;';
-        div.innerHTML = `
-          <label><input type="checkbox" ${groupByCategory?'checked':''} onchange="toggleGroupByCategory(this.checked)"> Agrupar por categoria</label>
-          <select style="width:auto" onchange="setCategoryFilter(this.value)">${opts}</select>
+        const groupOpts = `<option value="genero" ${groupType==='genero'?'selected':''}>Gênero</option>`;
+        let html = `
+          <label style="display:flex;align-items:center;gap:0.25rem;">
+            <input type="checkbox" ${groupBy?'checked':''} onchange="toggleGroupBy(this.checked)">
+            Agrupar
+          </label>
+          <select style="width:auto" onchange="setGroupType(this.value)">${groupOpts}</select>
         `;
+        if (groupBy && groupType === 'genero') {
+          const status = selectedTab === 'lendo' ? 'lendo' : 'quero_ler';
+          const categories = Array.from(new Set(livros
+            .filter(b => b.status === status && b.year === cy)
+            .map(b => b.categoria || 'Sem categoria'))).sort();
+          const opts = ['<option value="all">Todos</option>', ...categories.map(c => `<option value="${c}" ${selectedCategory===c?'selected':''}>${c}</option>`)].join('');
+          html += ` <span>Filtrar</span> <select style="width:auto" onchange="setCategoryFilter(this.value)">${opts}</select>`;
+        }
+        div.innerHTML = html;
       } else {
         div.innerHTML = '';
         div.style = '';
       }
     }
 
+    function setGroupType(val) {
+      groupType = val;
+      selectedCategory = 'all';
+      renderGroupToggle();
+      renderBooks();
+    }
+
     function setCategoryFilter(val) { selectedCategory = val; renderBooks(); }
 
-    function toggleGroupByCategory(val) { groupByCategory = val; renderBooks(); }
+    function toggleGroupBy(val) {
+      groupBy = val;
+      selectedCategory = 'all';
+      renderGroupToggle();
+      renderBooks();
+    }
 
     function setTab(t) {
       selectedTab = t;
@@ -696,11 +717,11 @@
       } else {
         list = livros.filter(b => b.status==='lido' && b.completedYear===selectedYear);
       }
-      if (selectedCategory !== 'all') {
+      if (groupBy && groupType === 'genero' && selectedCategory !== 'all') {
         list = list.filter(b => (b.categoria || 'Sem categoria') === selectedCategory);
       }
       if (!list.length) { container.innerHTML = '<p>Nenhum livro.</p>'; return; }
-      if (groupByCategory && (selectedTab === 'lendo' || selectedTab === 'quero')) {
+      if (groupBy && groupType === 'genero' && (selectedTab === 'lendo' || selectedTab === 'quero')) {
         container.className = '';
         const groups = {};
         list.forEach(b => {
