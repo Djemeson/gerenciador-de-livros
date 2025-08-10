@@ -415,13 +415,14 @@
       }
       const getLastUpdate = b => {
         if (b.history && b.history.length) {
-          return b.history[b.history.length - 1].date;
+          const last = b.history[b.history.length - 1];
+          return last.timestamp || new Date(last.date).getTime();
         }
-        return b.startDate || '1970-01-01';
+        return b.startDate ? new Date(b.startDate).getTime() : 0;
       };
       const reading = livros
         .filter(b => b.lidas > 0 && b.lidas < b.paginas)
-        .sort((a, b) => new Date(getLastUpdate(b)) - new Date(getLastUpdate(a)));
+        .sort((a, b) => getLastUpdate(b) - getLastUpdate(a));
       let readingCard = '';
       if (reading.length) {
         const items = reading.map(b => {
