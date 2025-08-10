@@ -43,8 +43,27 @@
     .card.list .cover-placeholder { width:50px; height:75px; margin-bottom:0; }
     .reading-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:0.5rem; }
     .reading-card { display:flex; flex-direction:column; align-items:center; text-align:center; cursor:pointer; }
-    .reading-card img { width:100%; height:160px; object-fit:cover; border-radius:0.25rem; }
-    .cover-placeholder { width:100%; height:160px; background:rgba(0,0,0,0.2); color:#fff; display:flex; align-items:center; justify-content:center; border-radius:0.25rem; padding:0.25rem; text-align:center; margin-bottom:0.5rem; }
+    .reading-card img {
+      width:100%;
+      aspect-ratio:2/3;
+      height:auto;
+      object-fit:contain;
+      border-radius:0.25rem;
+    }
+    .cover-placeholder {
+      width:100%;
+      aspect-ratio:2/3;
+      height:auto;
+      background:rgba(0,0,0,0.2);
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:0.25rem;
+      padding:0.25rem;
+      text-align:center;
+      margin-bottom:0.5rem;
+    }
     .reading-card .progress-bar { width:100%; margin:0.25rem 0; }
     .reading-card .update-btn { width:100%; margin-top:0.25rem; }
     .history-layout { display:flex; gap:6rem; align-items:flex-start; }
