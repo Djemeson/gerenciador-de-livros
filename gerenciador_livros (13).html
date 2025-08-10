@@ -94,8 +94,6 @@
     #slot-view { font-size:1rem; margin-bottom:0.8rem; }
     #slot-remove { position:absolute; bottom:0.5rem; right:0.5rem; font-size:0.8rem; }
     #slot-options button:hover { opacity:0.7; }
-    #type-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; }
-    #type-editor { background:var(--card-bg); padding:0.5rem; border-radius:0.25rem; width:200px; box-shadow:0 2px 8px var(--card-shadow); }
     .goal-count { display:flex; align-items:center; gap:0.5rem; }
     .goal-count input { width:60px; margin:0; }
     .year-select { width:auto; margin-right:0.5rem; }
@@ -104,6 +102,8 @@
     .tab.active { background:var(--nav-bg); color:#fff; border-color:var(--nav-bg); }
     .dashboard-columns { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
     .dashboard-left, .dashboard-right { display:flex; flex-direction:column; gap:1rem; }
+    .category-group { margin-bottom:1rem; }
+    .category-group h3 { margin-bottom:0.5rem; border-left:4px solid var(--nav-bg); padding-left:0.5rem; }
   </style>
 </head>
 <body>
@@ -147,18 +147,6 @@
       <button id="slot-remove" title="Remover">🗑️</button>
     </div>
   </div>
-  <div id="type-overlay" onclick="closeTypeEditor()">
-    <div id="type-editor" onclick="event.stopPropagation()">
-      <select id="type-select">
-        <option value="" disabled selected>Tipo</option>
-        <option value="Físico">Físico</option>
-        <option value="E-book">E-book</option>
-        <option value="Audiobook">Audiobook</option>
-      </select>
-      <button class="primary" onclick="saveType()">Salvar</button>
-      <button onclick="closeTypeEditor()" style="background:transparent;color:var(--text-color);padding:0.3rem;width:100%">X</button>
-    </div>
-  </div>
   <script>
     const desafios = [
       { id:'bookmark_sprint', name:'Bookmark Sprint', description:'Ler 15 pág/dia', pagesPerDay:15 },
@@ -171,7 +159,7 @@
       const history = b.history || [];
       const startDate = b.startDate || (history.length ? history[0].date : null);
       const endDate = b.endDate || (b.status === 'lido' && history.length ? history[history.length - 1].date : null);
-      return { ...b, history, resumo: b.resumo || '', startDate, endDate };
+      return { ...b, history, resumo: b.resumo || '', categoria: b.categoria || '', startDate, endDate };
     });
     let metaAnnual = JSON.parse(localStorage.getItem('metaAnnual')) || [];
     let metaAnnualCount = parseInt(localStorage.getItem('metaAnnualCount')) || metaAnnual.length;
@@ -193,8 +181,8 @@
     }, 60 * 1000);
     let selectedYear = new Date().getFullYear();
     let selectedTab = 'lendo';
-    let editingTypeId = null;
-    let typeBack = 'biblioteca';
+    let groupType = 'none';
+    let selectedCategory = 'all';
 
     function salvarLivros() { localStorage.setItem('livros', JSON.stringify(livros)); }
     function formatDate(dateStr) {
@@ -588,11 +576,15 @@
       const tabsDiv = document.createElement('div');
       tabsDiv.id = 'tabsContainer';
       conteudo.appendChild(tabsDiv);
+      const groupDiv = document.createElement('div');
+      groupDiv.id = 'groupContainer';
+      conteudo.appendChild(groupDiv);
       const booksDiv = document.createElement('div');
       booksDiv.id = 'booksContainer';
       conteudo.appendChild(booksDiv);
       populateYearSelect();
       renderTabs();
+      renderGroupToggle();
       renderBooks();
     }
 
@@ -609,7 +601,9 @@
     function changeYear(val) {
       selectedYear = val === 'all' ? 'all' : parseInt(val);
       if (selectedYear === new Date().getFullYear()) selectedTab = 'lendo';
+      selectedCategory = 'all';
       renderTabs();
+      renderGroupToggle();
       renderBooks();
     }
 
@@ -625,13 +619,82 @@
       `;
     }
 
-    function setTab(t) { selectedTab = t; renderTabs(); renderBooks(); }
+    function renderGroupToggle() {
+      const div = document.getElementById('groupContainer');
+      if (!div) return;
+      const cy = new Date().getFullYear();
+      if (selectedYear === cy && (selectedTab === 'lendo' || selectedTab === 'quero')) {
+        div.style = 'display:flex; gap:0.5rem; align-items:center;';
+        const groupOpts = [
+          `<option value="none" ${groupType==='none'?'selected':''}>---</option>`,
+          `<option value="genero" ${groupType==='genero'?'selected':''}>Gênero</option>`
+        ].join('');
+        let html = `Agrupar <select style="width:auto" onchange="setGroupType(this.value)">${groupOpts}</select>`;
+        if (groupType === 'genero') {
+          const status = selectedTab === 'lendo' ? 'lendo' : 'quero_ler';
+          const categories = Array.from(new Set(livros
+            .filter(b => b.status === status && b.year === cy)
+            .map(b => b.categoria || 'Sem categoria'))).sort();
+          const opts = ['<option value="all">Todos</option>', ...categories.map(c => `<option value="${c}" ${selectedCategory===c?'selected':''}>${c}</option>`)].join('');
+          html += ` <span>Filtrar</span> <select style="width:auto" onchange="setCategoryFilter(this.value)">${opts}</select>`;
+        }
+        div.innerHTML = html;
+      } else {
+        div.innerHTML = '';
+        div.style = '';
+      }
+    }
+
+    function setGroupType(val) {
+      groupType = val;
+      selectedCategory = 'all';
+      renderGroupToggle();
+      renderBooks();
+    }
+
+    function setCategoryFilter(val) { selectedCategory = val; renderBooks(); }
+
+    function setTab(t) {
+      selectedTab = t;
+      selectedCategory = 'all';
+      renderTabs();
+      renderGroupToggle();
+      renderBooks();
+    }
+
+    function appendBookCard(parent, b) {
+      const isAudio = b.tipo === 'Audiobook';
+      const pc = isAudio ? b.lidas : Math.round((b.lidas/b.paginas)*100);
+      const div = document.createElement('div');
+      div.className = 'card';
+      if (viewMode === 'list') div.classList.add('list');
+      div.onclick = () => mostrarHistorico(b.id);
+      const cover = b.capa
+        ? `<img src="${b.capa}" alt="Capa de ${b.titulo}">`
+        : `<div class="cover-placeholder">${b.titulo}</div>`;
+      const start = b.startDate ? `<p>Início: ${formatDate(b.startDate)}</p>` : '';
+      const end = b.endDate ? `<p>Fim: ${formatDate(b.endDate)}</p>` : '';
+      const tipoInfo = b.tipo ? `<p>Tipo: ${b.tipo}</p>` : '';
+      const updateTxt = (viewMode === 'grid' && gridSize === 'small') ? 'Atualizar' : 'Atualizar progresso';
+      const progressText = isAudio ? `${pc}%` : `${b.lidas}/${b.paginas} (${pc}%)`;
+      div.innerHTML = `
+            ${cover}
+            <div class="details">
+              <p>${progressText}</p>
+              <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
+              ${tipoInfo}
+              ${start}
+              ${end}
+              <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">${updateTxt}</button>
+            </div>
+          `;
+      parent.appendChild(div);
+    }
 
     function renderBooks() {
       const container = document.getElementById('booksContainer');
       if (!container) return;
       container.innerHTML = '';
-      if (viewMode === 'grid') container.className = 'grid ' + gridSize; else container.className = '';
       let list = [];
       const cy = new Date().getFullYear();
       if (selectedYear === 'all') {
@@ -643,37 +706,33 @@
       } else {
         list = livros.filter(b => b.status==='lido' && b.completedYear===selectedYear);
       }
+      if (groupType === 'genero' && selectedCategory !== 'all') {
+        list = list.filter(b => (b.categoria || 'Sem categoria') === selectedCategory);
+      }
       if (!list.length) { container.innerHTML = '<p>Nenhum livro.</p>'; return; }
+      if (groupType === 'genero' && (selectedTab === 'lendo' || selectedTab === 'quero')) {
+        container.className = '';
+        const groups = {};
         list.forEach(b => {
-          const isAudio = b.tipo === 'Audiobook';
-          const pc = isAudio ? b.lidas : Math.round((b.lidas/b.paginas)*100);
-          const div = document.createElement('div');
-          div.className = 'card';
-          if (viewMode === 'list') div.classList.add('list');
-          div.onclick = () => mostrarHistorico(b.id);
-          const cover = b.capa
-            ? `<img src="${b.capa}" alt="Capa de ${b.titulo}">`
-            : `<div class="cover-placeholder">${b.titulo}</div>`;
-          const start = b.startDate ? `<p>Início: ${formatDate(b.startDate)}</p>` : '';
-          const end = b.endDate ? `<p>Fim: ${formatDate(b.endDate)}</p>` : '';
-          const tipo = b.tipo
-            ? `<p>Tipo: ${b.tipo}</p>`
-            : `<button class="update-btn" onclick="event.stopPropagation();editarTipo(${b.id});">Definir tipo</button>`;
-          const updateTxt = (viewMode === 'grid' && gridSize === 'small') ? 'Atualizar' : 'Atualizar progresso';
-          const progressText = isAudio ? `${pc}%` : `${b.lidas}/${b.paginas} (${pc}%)`;
-          div.innerHTML = `
-            ${cover}
-            <div class="details">
-              <p>${progressText}</p>
-              <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
-              ${tipo}
-              ${start}
-              ${end}
-              <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">${updateTxt}</button>
-            </div>
-          `;
-          container.appendChild(div);
+          const cat = b.categoria || 'Sem categoria';
+          (groups[cat] = groups[cat] || []).push(b);
         });
+        Object.keys(groups).sort().forEach(cat => {
+          const groupDiv = document.createElement('div');
+          groupDiv.className = 'category-group';
+          const h = document.createElement('h3');
+          h.textContent = cat;
+          groupDiv.appendChild(h);
+          const booksDiv = document.createElement('div');
+          if (viewMode === 'grid') booksDiv.className = 'grid ' + gridSize;
+          groupDiv.appendChild(booksDiv);
+          groups[cat].forEach(b => appendBookCard(booksDiv, b));
+          container.appendChild(groupDiv);
+        });
+      } else {
+        if (viewMode === 'grid') container.className = 'grid ' + gridSize; else container.className = '';
+        list.forEach(b => appendBookCard(container, b));
+      }
     }
 
     function mostrarHistorico(id, back='biblioteca') {
@@ -690,6 +749,7 @@
                 <h2>${book.titulo}</h2>
                 ${book.autor ? `<p><strong>Autor:</strong> ${book.autor}</p>` : ''}
                 ${book.editora ? `<p><strong>Editora:</strong> ${book.editora}</p>` : ''}
+                ${book.categoria ? `<p><strong>Categoria:</strong> ${book.categoria}</p>` : ''}
                 ${book.isbn ? `<p><strong>ISBN:</strong> ${book.isbn}</p>` : ''}
                 ${book.tipo ? `<p><strong>Tipo:</strong> ${book.tipo}</p>` : ''}
                 ${book.startDate ? `<p><strong>Início:</strong> ${formatDate(book.startDate)}</p>` : ''}
@@ -711,8 +771,7 @@
       });
       html += `
             <button class="update-btn" onclick="showModal(${id});event.stopPropagation();">Atualizar progresso</button>
-            <button class="update-btn" onclick="editarCapa(${id});event.stopPropagation();">${book.capa ? 'Editar capa' : 'Adicionar capa'}</button>
-            <button class="update-btn" onclick="event.stopPropagation();editarTipo(${id}, '${back}');">${book.tipo ? 'Editar tipo' : 'Adicionar tipo'}</button>
+            <button class="update-btn" onclick="event.stopPropagation();editarLivro(${id}, '${back}');">Editar</button>
           </div>
         </div>`;
       conteudo.innerHTML = html;
@@ -727,6 +786,7 @@
           <input id="titulo" placeholder="Título" />
           <input id="autor" placeholder="Autor" />
           <input id="editora" placeholder="Editora" />
+          <input id="categoria" placeholder="Categoria" />
           <textarea id="resumo" placeholder="Resumo"></textarea>
           <input id="capa" placeholder="URL da capa" />
           <input id="paginas" type="number" placeholder="Páginas" />
@@ -759,6 +819,7 @@
         document.getElementById('titulo').value = info.title || '';
         document.getElementById('autor').value = info.authors ? info.authors.join(', ') : '';
         document.getElementById('editora').value = info.publisher || '';
+        document.getElementById('categoria').value = (info.categories && info.categories[0]) || '';
         document.getElementById('resumo').value = info.description || '';
         document.getElementById('capa').value = (info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail)) || '';
         document.getElementById('paginas').value = info.pageCount || '';
@@ -800,6 +861,7 @@
       const t = document.getElementById('titulo').value;
       const a = document.getElementById('autor').value;
       const e = document.getElementById('editora').value;
+      const cat = document.getElementById('categoria').value;
       const r = document.getElementById('resumo').value;
       const c = document.getElementById('capa').value;
       let pg = parseInt(document.getElementById('paginas').value);
@@ -814,7 +876,7 @@
       let status = 'quero_ler', year = cy, completedYear = null;
       if (ld >= pg) { status = 'lido'; completedYear = cy; }
       else if (ld > 0) { status = 'lendo'; }
-      const book = { id: Date.now(), titulo: t, autor: a, editora: e, resumo: r, isbn, paginas: pg, lidas: ld, capa: c, tipo: tp, history: [], status, year, completedYear, startDate: null, endDate: null };
+      const book = { id: Date.now(), titulo: t, autor: a, editora: e, categoria: cat, resumo: r, isbn, paginas: pg, lidas: ld, capa: c, tipo: tp, history: [], status, year, completedYear, startDate: null, endDate: null };
       if (ld > 0) {
         const date = new Date().toISOString().split('T')[0];
         const pct  = Math.round((ld/pg)*100);
@@ -827,40 +889,81 @@
       navegar('biblioteca');
     }
 
-    function editarCapa(id) {
+    function editarLivro(id, back = 'biblioteca') {
       const book = livros.find(b => b.id === id);
-      const url = prompt('URL da capa', book.capa || '');
-      if (url !== null) {
-        book.capa = url.trim();
-        salvarLivros();
-        navegar('biblioteca');
+      if (!book) return;
+      conteudo.innerHTML = `
+        <div class="card">
+          <h2>Editar Livro</h2>
+          <input id="isbn" placeholder="ISBN" value="${book.isbn || ''}" />
+          <button class="update-btn" onclick="buscarISBN()">Buscar</button>
+          <input id="titulo" placeholder="Título" value="${book.titulo || ''}" />
+          <input id="autor" placeholder="Autor" value="${book.autor || ''}" />
+          <input id="editora" placeholder="Editora" value="${book.editora || ''}" />
+          <input id="categoria" placeholder="Categoria" value="${book.categoria || ''}" />
+          <textarea id="resumo" placeholder="Resumo">${book.resumo || ''}</textarea>
+          <input id="capa" placeholder="URL da capa" value="${book.capa || ''}" />
+          <input id="paginas" type="number" placeholder="Páginas" />
+          <input id="lidas" type="number" placeholder="Lidas" />
+          <input id="percent" type="number" placeholder="Porcentagem" style="display:none" />
+          <select id="tipo">
+            <option value="" disabled>Tipo</option>
+            <option value="Físico">Físico</option>
+            <option value="E-book">E-book</option>
+            <option value="Audiobook">Audiobook</option>
+          </select>
+          <button class="primary" onclick="salvarEdicao(${id}, '${back}')">Salvar</button>
+        </div>`;
+      const tipoEl = document.getElementById('tipo');
+      const toggleFields = value => {
+        const isAudio = value === 'Audiobook';
+        document.getElementById('paginas').style.display = isAudio ? 'none' : '';
+        document.getElementById('lidas').style.display = isAudio ? 'none' : '';
+        document.getElementById('percent').style.display = isAudio ? '' : 'none';
+        if (isAudio) {
+          document.getElementById('percent').value = book.lidas || 0;
+        } else {
+          document.getElementById('paginas').value = book.paginas || '';
+          document.getElementById('lidas').value = book.lidas || 0;
+        }
+      };
+      tipoEl.addEventListener('change', e => toggleFields(e.target.value));
+      tipoEl.value = book.tipo || '';
+      toggleFields(tipoEl.value);
+    }
+
+    function salvarEdicao(id, back = 'biblioteca') {
+      const isbn = document.getElementById('isbn').value;
+      const t = document.getElementById('titulo').value;
+      const a = document.getElementById('autor').value;
+      const e = document.getElementById('editora').value;
+      const cat = document.getElementById('categoria').value;
+      const r = document.getElementById('resumo').value;
+      const c = document.getElementById('capa').value;
+      let pg = parseInt(document.getElementById('paginas').value);
+      let ld = parseInt(document.getElementById('lidas').value) || 0;
+      const tp = document.getElementById('tipo').value;
+      if (tp === 'Audiobook') {
+        pg = 100;
+        ld = parseInt(document.getElementById('percent').value) || 0;
       }
-    }
-
-    function editarTipo(id, back = 'biblioteca') {
-      editingTypeId = id;
-      typeBack = back;
+      if (!t || isNaN(pg) || !tp) return alert('Preencha todos os campos!');
       const book = livros.find(b => b.id === id);
-      const select = document.getElementById('type-select');
-      select.value = book.tipo || '';
-      document.getElementById('type-overlay').style.display = 'flex';
-    }
-
-    function saveType() {
-      const tp = document.getElementById('type-select').value;
-      if (!tp) { alert('Selecione um tipo'); return; }
-      const book = livros.find(b => b.id === editingTypeId);
+      book.isbn = isbn;
+      book.titulo = t;
+      book.autor = a;
+      book.editora = e;
+      book.categoria = cat;
+      book.resumo = r;
+      book.capa = c;
+      book.paginas = pg;
+      book.lidas = ld;
       book.tipo = tp;
+      if (ld >= pg) { book.status = 'lido'; book.completedYear = new Date().getFullYear(); }
+      else if (ld > 0) { book.status = 'lendo'; book.completedYear = null; }
+      else { book.status = 'quero_ler'; book.completedYear = null; }
       salvarLivros();
-      closeTypeEditor();
-      navegar(typeBack);
-    }
-
-    function closeTypeEditor() {
-      document.getElementById('type-overlay').style.display = 'none';
-      document.getElementById('type-select').value = '';
-      editingTypeId = null;
-      typeBack = 'biblioteca';
+      navegar(back);
     }
 
     navegar('dashboard');
