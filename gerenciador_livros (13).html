@@ -183,6 +183,7 @@
     let selectedTab = 'lendo';
     let groupType = 'none';
     let selectedCategory = 'all';
+    let currentPage = 'dashboard';
 
     function salvarLivros() { localStorage.setItem('livros', JSON.stringify(livros)); }
     function formatDate(dateStr) {
@@ -246,6 +247,7 @@
     }
 
     function navegar(p) {
+      currentPage = p;
       document.getElementById('tituloPagina').textContent = p.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
       document.getElementById('metaAnualPaginas').textContent = '';
       conteudo.innerHTML = '';
@@ -260,7 +262,9 @@
     }
 
     let currentEditId = null;
+    let modalBack = 'biblioteca';
     function showModal(id) {
+      modalBack = currentPage;
       currentEditId = id;
       const book = livros.find(b => b.id === id);
       document.getElementById('modal-date').value = new Date().toISOString().split('T')[0];
@@ -329,7 +333,7 @@
         book.year = new Date().getFullYear();
         book.endDate = null;
       }
-      salvarLivros(); hideModal(); navegar('biblioteca');
+      salvarLivros(); hideModal(); navegar(modalBack);
     }
 
     document.getElementById('modal-save').addEventListener('click', saveModal);
