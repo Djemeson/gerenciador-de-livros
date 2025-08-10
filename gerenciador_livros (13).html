@@ -524,7 +524,6 @@
 
     function carregarBiblioteca() {
       conteudo.innerHTML = '';
-      if (!livros.length) { conteudo.innerHTML = '<p>Nenhum livro.</p>'; return; }
       const top = document.createElement('div');
       top.style = 'margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center;';
       top.innerHTML = `
@@ -741,9 +740,9 @@
       const r = document.getElementById('resumo').value;
       const c = document.getElementById('capa').value;
       const pg = parseInt(document.getElementById('paginas').value);
-      const ld = parseInt(document.getElementById('lidas').value);
+      const ld = parseInt(document.getElementById('lidas').value) || 0;
       const tp = document.getElementById('tipo').value;
-      if (!t || !pg || isNaN(ld) || !tp) return alert('Preencha todos os campos!');
+      if (!t || !pg || !tp) return alert('Preencha todos os campos!');
       const cy = new Date().getFullYear();
       let status = 'quero_ler', year = cy, completedYear = null;
       if (ld >= pg) { status = 'lido'; completedYear = cy; }
