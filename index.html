@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Biblioteca Pessoal</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
+  <link rel="stylesheet" href="styles.css" />
   <style>
     :root { --bg-color:#f0fdf4; --text-color:#333; --nav-bg:#22c55e; --card-bg:white; --card-shadow:rgba(0,0,0,0.06); --progress-bg:#e5e7eb; --progress-fill:#22c55e; }
     [data-theme="dark"] { --bg-color:#111827; --text-color:#e5e7eb; --nav-bg:#1f2937; --card-bg:#1e293b; --card-shadow:rgba(0,0,0,0.4); --progress-bg:#374151; --progress-fill:#10b981; }
@@ -982,5 +983,16 @@
 
     navegar('dashboard');
   </script>
+  <div id="areasSection" style="margin:1rem 0;">
+    <button id="addAreaBtn" class="primary">Nova Área</button>
+    <div id="areasGrid" class="grid"></div>
+  </div>
+  <div id="modal-backdrop" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">
+    <div style="background:var(--card-bg);padding:16px;border-radius:8px;width:90%;max-width:600px;">
+      <h3 id="modal-title"></h3>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+  <script src="app.js"></script>
 </body>
 </html>

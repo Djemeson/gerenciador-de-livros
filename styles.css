@@ -1,0 +1,29 @@
+.area-columns {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.subcard {
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+  padding: 12px;
+  box-shadow: var(--shadow);
+}
+.subcard h4 {
+  margin: 0 0 8px 0;
+  font-weight: 800;
+  letter-spacing: .2px;
+}
+.subcard .muted { color: var(--muted); font-size: 13px; }
+.subcard .list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.subcard .row {
+  display: flex; align-items: center; gap: 8px; 
+  border: 1px solid var(--stroke); border-radius: 10px; padding: 8px;
+  background: #0f1320;
+}
+.subcard .row input[type="text"], .subcard textarea {
+  width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--stroke);
+  background: #0f1320; color: #e7edf7;
+}
+.subcard .btnline { display: flex; gap: 8px; margin-top: 8px; }
