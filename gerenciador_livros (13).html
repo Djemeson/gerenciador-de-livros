@@ -46,7 +46,7 @@
     .card.list .details { flex:1; }
     .card.list .cover-placeholder { width:50px; height:75px; margin-bottom:0; }
     .reading-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:0.5rem; }
-    .reading-card { display:flex; flex-direction:column; align-items:center; text-align:center; cursor:pointer; }
+    .reading-card { display:flex; flex-direction:column; align-items:center; text-align:center; cursor:pointer; position:relative; }
     .reading-card img {
       width:100%;
       aspect-ratio:2/3;
@@ -70,6 +70,21 @@
     }
     .reading-card .progress-bar { width:100%; margin:0.25rem 0; }
     .reading-card .update-btn { width:100%; margin-top:0.25rem; }
+    .meta-badge {
+      position:absolute;
+      top:0.5rem;
+      left:0;
+      width:60%;
+      height:20px;
+      background:#C4A200;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#fff;
+      font-weight:700;
+      z-index:2;
+      pointer-events:none;
+    }
     .history-layout { display:flex; gap:6rem; align-items:flex-start; }
     .history-layout img { width:120px; height:180px; object-fit:cover; border-radius:0.25rem; }
     .history-info { display:flex; gap:1rem; align-items:flex-start; }
@@ -423,8 +438,10 @@
           const cover = b.capa
             ? `<img src=\"${b.capa}\" alt=\"Capa de ${b.titulo}\">`
             : `<div class=\"cover-placeholder\">${b.titulo}</div>`;
+          const badge = metaAnnual.includes(b.id) ? '<div class="meta-badge">META</div>' : '';
           return `
             <div class=\"reading-card\" onclick=\"mostrarHistorico(${b.id},'dashboard')\">
+              ${badge}
               ${cover}
               <div>${progressText}</div>
               ${b.tipo ? `<div>${b.tipo}</div>` : ''}
