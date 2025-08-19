@@ -156,11 +156,11 @@
   </div>
   <script>
     const desafios = [
-      { id:'bookmark_sprint', name:'Bookmark Sprint', description:'Ler 15 pág/dia', pagesPerDay:15 },
-      { id:'reading_marathon', name:'Reading Marathon', description:'Ler 30 pág/dia', pagesPerDay:30 },
-      { id:'weekend_warrior', name:'Weekend Warrior', description:'Ler 50 pág/dia', pagesPerDay:50 },
-      { id:'annual_challenge', name:'Desafio Anual', description:'Leia 20 livros até o final do ano!', pagesPerDay:17 }
-    ];
+      { id:'bookmark_sprint', name:'Bookmark Sprint', pagesPerDay:15 },
+      { id:'reading_marathon', name:'Reading Marathon', pagesPerDay:30 },
+      { id:'weekend_warrior', name:'Weekend Warrior', pagesPerDay:50 },
+      { id:'annual_challenge', name:'Desafio Anual', pagesPerDay:17 }
+    ].map(d => ({ ...d, description: `Ler ${d.pagesPerDay} pág/dia` }));
     let livros = JSON.parse(localStorage.getItem('livros')) || [];
     livros = livros.map(b => {
       const history = b.history || [];
@@ -396,8 +396,8 @@
             ${trophy && `<div style=\"font-size:2rem;text-align:center\">${trophy}</div>`}
             <h2>Meta diária</h2>
             <p>${d.description}</p>
-            <div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width:${ap}%\"></div></div>
-            <p>${ac} de ${at} livros (${ap}%)</p>
+            <div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width:${dp}%\"></div></div>
+            <p>${daily} de ${dm} pág (${dp}%)</p>
           </div>`;
         summaryCard = `
           <div class=\"card\">
