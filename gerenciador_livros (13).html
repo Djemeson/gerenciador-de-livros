@@ -70,13 +70,12 @@
     }
     .reading-card .progress-bar { width:100%; margin:0.25rem 0; }
     .reading-card .update-btn { width:100%; margin-top:0.25rem; }
-    .meta-badge {
+    .meta-badge, .lido-badge {
       position:absolute;
       top:0.5rem;
       left:0;
       width:60%;
       height:20px;
-      background:#C4A200;
       display:flex;
       align-items:center;
       justify-content:center;
@@ -85,6 +84,8 @@
       z-index:2;
       pointer-events:none;
     }
+    .meta-badge { background:#C4A200; }
+    .lido-badge { background:#16A34A; }
     .history-layout { display:flex; gap:6rem; align-items:flex-start; }
     .history-layout img { width:120px; height:180px; object-fit:cover; border-radius:0.25rem; }
     .history-info { display:flex; gap:1rem; align-items:flex-start; }
@@ -99,7 +100,7 @@
     #modal { background:var(--card-bg); padding:0.5rem; border-radius:0.25rem; width:200px; box-shadow:0 2px 8px var(--card-shadow); }
     .goal-slots { display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:1rem; }
     .goal-slot { width:60px; height:80px; background:rgba(0,0,0,0.2); color:#fff; display:flex; align-items:center; justify-content:center; border-radius:0.25rem; cursor:pointer; font-size:1.5rem; }
-    .goal-slot.filled { background:var(--card-bg); color:var(--text-color); font-size:0.7rem; padding:0.25rem; text-align:center; }
+    .goal-slot.filled { background:var(--card-bg); color:var(--text-color); font-size:0.7rem; padding:0.25rem; text-align:center; position:relative; }
     .goal-slot.filled img { width:100%; height:100%; object-fit:cover; border-radius:0.25rem; }
     #book-select-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; }
     #book-select { background:var(--card-bg); padding:1rem; border-radius:0.25rem; width:300px; max-height:80vh; overflow-y:auto; box-shadow:0 2px 8px var(--card-shadow); }
@@ -501,11 +502,12 @@
         if (id) {
           const book = livros.find(b => b.id === id);
           slot.className = 'goal-slot filled';
+          const badge = book && book.lidas >= book.paginas ? '<div class="lido-badge">Lido</div>' : '';
           if (book && book.capa) {
-            slot.innerHTML = `<img src="${book.capa}" alt="${book.titulo}">`;
+            slot.innerHTML = `${badge}<img src="${book.capa}" alt="${book.titulo}">`;
             slot.style.padding = '0';
           } else {
-            slot.textContent = book ? book.titulo : '';
+            slot.innerHTML = `${badge}${book ? book.titulo : ''}`;
             slot.style.padding = '';
           }
           slot.onclick = () => openSlotOptions(i);
