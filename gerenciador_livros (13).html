@@ -10,10 +10,11 @@
     [data-theme="dark"] { --bg-color:#111827; --text-color:#e5e7eb; --nav-bg:#1f2937; --card-bg:#1e293b; --card-shadow:rgba(0,0,0,0.4); --progress-bg:#374151; --progress-fill:#10b981; }
     * { box-sizing:border-box; margin:0; padding:0; font-family:'Segoe UI',sans-serif; }
     body { display:grid; grid-template-columns:240px 1fr; height:100vh; background:var(--bg-color); color:var(--text-color); }
-    nav { background:var(--nav-bg); padding:1rem; color:white; }
+    nav { background:var(--nav-bg); padding:1rem; color:white; display:flex; flex-direction:column; gap:0.25rem; }
     nav h2 { font-size:1.2rem; margin-bottom:1rem; }
-    nav button { width:100%; background:transparent; border:none; color:inherit; padding:0.5rem; text-align:left; cursor:pointer; border-radius:0.25rem; }
-    nav button:hover { background:rgba(255,255,255,0.2); }
+    nav button { width:100%; background:transparent; border:none; color:inherit; padding:0.6rem 0.8rem; text-align:left; cursor:pointer; border-radius:0.375rem; transition:background 0.3s, transform 0.2s; display:flex; align-items:center; gap:0.5rem; }
+    nav button:hover { background:rgba(255,255,255,0.15); transform:translateX(4px); }
+    nav button.active { background:rgba(255,255,255,0.3); }
     main { padding:1rem; overflow-y:auto; }
     header { display:flex; justify-content:space-between; align-items:center; background:var(--card-bg); padding:0.5rem 1rem; border-radius:0.5rem; box-shadow:0 2px 8px var(--card-shadow); margin-bottom:1rem; }
     header h1 { font-size:1.2rem; }
@@ -256,6 +257,9 @@
       document.getElementById('tituloPagina').textContent = p.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
       document.getElementById('metaAnualPaginas').textContent = '';
       conteudo.innerHTML = '';
+      document.querySelectorAll('nav button').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('onclick') === `navegar('${p}')`);
+      });
       switch (p) {
         case 'dashboard': carregarDashboard(); break;
         case 'biblioteca': carregarBiblioteca(); break;
