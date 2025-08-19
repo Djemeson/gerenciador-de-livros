@@ -407,9 +407,8 @@
             <p><strong>Restante:</strong> ${Math.max(0, at - ac)} livros</p>
           </div>`;
       } else {
-        const tp = livros.reduce((a,b) => a + b.lidas, 0);
-        const rem = Math.max(0, d.pagesPerDay - tp);
-        const pct = Math.min(100, Math.round(tp / d.pagesPerDay * 100));
+        const rem = Math.max(0, d.pagesPerDay - daily);
+        const pct = Math.min(100, Math.round(daily / d.pagesPerDay * 100));
         const trophy = pct >= 100 ? '🏆 Desafio Concluído! 🏆' : '';
         metaCard = `
           <div class=\"card\">
@@ -422,7 +421,7 @@
         summaryCard = `
           <div class=\"card\">
             <h2>Resumo</h2>
-            <p>Total: ${tp} pág</p>
+            <p>Total: ${daily} pág</p>
             <p>Meta diária: ${d.pagesPerDay} pág</p>
             <p>Restante: ${rem} pág</p>
           </div>`;
