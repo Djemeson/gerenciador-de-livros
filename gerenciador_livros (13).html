@@ -156,10 +156,9 @@
   </div>
   <script>
     const desafios = [
-      { id:'bookmark_sprint', name:'Bookmark Sprint', pagesPerDay:15 },
-      { id:'reading_marathon', name:'Reading Marathon', pagesPerDay:30 },
-      { id:'weekend_warrior', name:'Weekend Warrior', pagesPerDay:50 },
-      { id:'annual_challenge', name:'Desafio Anual', pagesPerDay:17 }
+      { id:'bookmark_sprint', name:'Meta 15 pág/dia', pagesPerDay:15 },
+      { id:'reading_marathon', name:'Meta 30 pág/dia', pagesPerDay:30 },
+      { id:'weekend_warrior', name:'Meta 50 pág/dia', pagesPerDay:50 }
     ].map(d => ({ ...d, description: `Ler ${d.pagesPerDay} pág/dia` }));
     let livros = JSON.parse(localStorage.getItem('livros')) || [];
     livros = livros.map(b => {
@@ -368,8 +367,8 @@
       const perDay = daysLeft > 0 ? Math.ceil(remaining / daysLeft) : remaining;
       const trophy = daily >= perDay ? ' 🏆' : '';
       document.getElementById('metaAnualPaginas').textContent = `${daily} pág lidas · ${perDay} pág/dia${trophy}`;
-      const desafioId = localStorage.getItem('desafio') || desafios[0].id;
-      const d = desafios.find(x => x.id === desafioId);
+      const desafioId = localStorage.getItem('desafio');
+      const d = desafios.find(x => x.id === desafioId) || desafios[0];
       const dm = d.pagesPerDay;
       const wm = dm * 7;
       const at = metaAnnualCount;
@@ -387,45 +386,24 @@
           <p>Anual: ${ac}/${at} livros (${ap}%)</p>
           <div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width:${ap}%\"></div></div>
         </div>`;
-      let metaCard = '';
-      let summaryCard = '';
-      if (d.id === 'annual_challenge') {
-        const trophy = ac >= at ? '🏆 Meta Anual Alcançada! 🏆' : '';
-        metaCard = `
-          <div class=\"card\">
-            ${trophy && `<div style=\"font-size:2rem;text-align:center\">${trophy}</div>`}
-            <h2>Meta diária</h2>
-            <p>${d.description}</p>
-            <div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width:${dp}%\"></div></div>
-            <p>${daily} de ${dm} pág (${dp}%)</p>
-          </div>`;
-        summaryCard = `
-          <div class=\"card\">
-            <h2>Resumo</h2>
-            <p><strong>Concluídos:</strong> ${ac} livros</p>
-            <p><strong>Meta anual:</strong> ${at} livros</p>
-            <p><strong>Restante:</strong> ${Math.max(0, at - ac)} livros</p>
-          </div>`;
-      } else {
-        const rem = Math.max(0, d.pagesPerDay - daily);
-        const pct = Math.min(100, Math.round(daily / d.pagesPerDay * 100));
-        const trophy = pct >= 100 ? '🏆 Desafio Concluído! 🏆' : '';
-        metaCard = `
-          <div class=\"card\">
-            ${trophy && `<div style=\"font-size:2rem;text-align:center\">${trophy}</div>`}
-            <h2>Meta diária</h2>
-            <p>${d.description}</p>
-            <div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width:${pct}%\"></div></div>
-            <p>${pct}% meta</p>
-          </div>`;
-        summaryCard = `
-          <div class=\"card\">
-            <h2>Resumo</h2>
-            <p>Total: ${daily} pág</p>
-            <p>Meta diária: ${d.pagesPerDay} pág</p>
-            <p>Restante: ${rem} pág</p>
-          </div>`;
-      }
+      const rem = Math.max(0, d.pagesPerDay - daily);
+      const pct = dp;
+      const challengeTrophy = pct >= 100 ? '🏆 Desafio Concluído! 🏆' : '';
+      const metaCard = `
+        <div class=\"card\">
+          ${challengeTrophy && `<div style=\"font-size:2rem;text-align:center\">${challengeTrophy}</div>`}
+          <h2>Meta diária</h2>
+          <p>${d.description}</p>
+          <div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width:${pct}%\"></div></div>
+          <p>${pct}% meta</p>
+        </div>`;
+      const summaryCard = `
+        <div class=\"card\">
+          <h2>Resumo</h2>
+          <p>Total: ${daily} pág</p>
+          <p>Meta diária: ${d.pagesPerDay} pág</p>
+          <p>Restante: ${rem} pág</p>
+        </div>`;
       const getLastUpdate = b => {
         if (b.history && b.history.length) {
           const last = b.history[b.history.length - 1];
@@ -854,14 +832,15 @@
       conteudo.innerHTML = `<div class="card"><h2>Relatórios</h2><p>Em breve</p></div>`;
     }
 
-    function carregarConfiguracoes() {
-      const idSel = localStorage.getItem('desafio') || desafios[0].id;
-      const opts = desafios.map(d => `<option value="${d.id}"${d.id===idSel?' selected':''}>${d.name}</option>`).join('');
-      conteudo.innerHTML = `<div class="card">
-        <h2>Configurações</h2>
-        <select onchange="localStorage.setItem('desafio',this.value); navegar('dashboard')">
-          ${opts}
-        </select>
+      function carregarConfiguracoes() {
+        const saved = localStorage.getItem('desafio');
+        const idSel = desafios.some(d => d.id === saved) ? saved : desafios[0].id;
+        const opts = desafios.map(d => `<option value="${d.id}"${d.id===idSel?' selected':''}>${d.name}</option>`).join('');
+        conteudo.innerHTML = `<div class="card">
+          <h2>Configurações</h2>
+          <select onchange="localStorage.setItem('desafio',this.value); navegar('dashboard')">
+            ${opts}
+          </select>
         <button class="primary" onclick="reiniciarBaseDados()">Reiniciar base de Dados</button>
       </div>`;
     }
