@@ -388,10 +388,10 @@
         </div>`;
       const rem = Math.max(0, d.pagesPerDay - daily);
       const pct = dp;
-      const trophy = pct >= 100 ? '🏆 Desafio Concluído! 🏆' : '';
+      const challengeTrophy = pct >= 100 ? '🏆 Desafio Concluído! 🏆' : '';
       const metaCard = `
         <div class=\"card\">
-          ${trophy && `<div style=\"font-size:2rem;text-align:center\">${trophy}</div>`}
+          ${challengeTrophy && `<div style=\"font-size:2rem;text-align:center\">${challengeTrophy}</div>`}
           <h2>Meta diária</h2>
           <p>${d.description}</p>
           <div class=\"progress-bar\"><div class=\"progress-fill\" style=\"width:${pct}%\"></div></div>
