@@ -73,38 +73,17 @@
     .meta-badge {
       position:absolute;
       top:0.5rem;
-      right:0;
+      left:0;
       width:60%;
-      height:40px;
-      background:linear-gradient(90deg,#8A6B00 0%,#FFE168 25%,#C4A200 50%,#FFE168 75%,#8A6B00 100%);
-      box-shadow:inset 0 2px 4px rgba(0,0,0,0.4),0 4px 6px rgba(0,0,0,0.2);
+      height:20px;
+      background:#C4A200;
       display:flex;
       align-items:center;
       justify-content:center;
       color:#fff;
       font-weight:700;
-      text-shadow:1px 1px 2px rgba(0,0,0,0.6);
-      overflow:hidden;
       z-index:2;
       pointer-events:none;
-    }
-    .meta-badge::before {
-      content:"";
-      position:absolute;
-      top:-50%;
-      left:-50%;
-      width:200%;
-      height:200%;
-      background:linear-gradient(45deg,rgba(255,255,255,0) 40%,rgba(255,255,255,0.9) 50%,rgba(255,255,255,0) 60%);
-    }
-    .meta-badge::after {
-      content:"";
-      position:absolute;
-      top:0;
-      left:0;
-      width:100%;
-      height:100%;
-      background:linear-gradient(to bottom,rgba(255,255,255,0.8),rgba(255,255,255,0.1) 50%,rgba(255,255,255,0));
     }
     .history-layout { display:flex; gap:6rem; align-items:flex-start; }
     .history-layout img { width:120px; height:180px; object-fit:cover; border-radius:0.25rem; }
