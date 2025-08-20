@@ -589,8 +589,9 @@
           const book = livros.find(b => b.id === id);
           slot.className = 'goal-slot filled';
           const pc = book ? (book.tipo === 'Audiobook' ? book.lidas : Math.round((book.lidas / book.paginas) * 100)) : 0;
-          const pctCircle = `<div class="percent-circle">${pc}%</div>`;
-          const badge = book && book.lidas >= book.paginas ? '<div class="lido-badge">Lido</div>' : '';
+          const isCompleted = book && book.lidas >= book.paginas;
+          const pctCircle = !isCompleted ? `<div class="percent-circle">${pc}%</div>` : '';
+          const badge = isCompleted ? '<div class="lido-badge">Lido</div>' : '';
           if (book && book.capa) {
             slot.innerHTML = `${pctCircle}${badge}<img src="${book.capa}" alt="${book.titulo}">`;
             slot.style.padding = '0';
