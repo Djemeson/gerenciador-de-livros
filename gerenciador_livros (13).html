@@ -72,7 +72,6 @@
     .reading-card .update-btn { width:100%; margin-top:0.25rem; }
     .meta-badge, .lido-badge {
       position:absolute;
-      top:0.25rem;
       left:0;
       width:60%;
       height:20px;
@@ -84,8 +83,14 @@
       z-index:2;
       pointer-events:none;
     }
-    .meta-badge { background:#C4A200; }
-    .lido-badge { background:#16A34A; }
+    .meta-badge {
+      top:0.5rem;
+      background:#C4A200;
+    }
+    .lido-badge {
+      top:0;
+      background:#16A34A;
+    }
     .history-layout { display:flex; gap:6rem; align-items:flex-start; }
     .history-layout img { width:120px; height:180px; object-fit:cover; border-radius:0.25rem; }
     .history-info { display:flex; gap:1rem; align-items:flex-start; }
