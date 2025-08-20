@@ -32,7 +32,7 @@
     .grid.medium { grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); }
     .grid.large { grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); }
     .grid .card { margin-bottom:0; }
-    .card img { width:100%; object-fit:cover; margin-bottom:0.5rem; border-radius:0.25rem; }
+    .card img { width:100%; object-fit:cover; border-radius:0.25rem; }
     .grid .card img, .grid .cover-placeholder { aspect-ratio:2/3; height:auto; }
     .grid .card img { object-fit:contain; }
     .grid .update-btn { width:100%; }
@@ -68,7 +68,6 @@
       border-radius:0.25rem;
       padding:0.25rem;
       text-align:center;
-      margin-bottom:0.5rem;
     }
     .reading-card .progress-bar { width:100%; margin:0.25rem 0; }
     .reading-card .update-btn { width:100%; margin-top:0; }
@@ -109,8 +108,23 @@
       font-weight:700;
       z-index:3;
     }
+    .cover-wrapper { position:relative; display:inline-block; margin-bottom:0.5rem; }
+    .card .cover-wrapper, .reading-card .cover-wrapper { width:100%; }
+    .card.list .cover-wrapper { width:50px; height:75px; }
+    .goal-slot.filled .cover-wrapper { width:100%; height:100%; }
+    .cover-icon {
+      position:absolute;
+      bottom:0.5rem;
+      right:0.5rem;
+      background:rgba(0,0,0,0.7);
+      color:#fff;
+      padding:0.3rem;
+      border-radius:0.25rem;
+      font-size:1rem;
+    }
     .history-layout { display:flex; gap:6rem; align-items:flex-start; }
-    .history-layout img { width:120px; height:180px; object-fit:cover; border-radius:0.25rem; }
+    .history-layout .cover-wrapper { width:120px; height:180px; }
+    .history-layout img { width:100%; height:100%; object-fit:cover; border-radius:0.25rem; }
     .history-info { display:flex; gap:1rem; align-items:flex-start; }
     .history-details { margin-top:0; }
     .history-synopsis { flex:1; }
@@ -250,15 +264,22 @@
     let selectedCategory = 'all';
     let currentPage = 'dashboard';
 
-    function renderTipo(tipo) {
+    function getTipoIcon(tipo) {
       const iconMap = {
         'Físico': 'fa-solid fa-book',
         'E-book': 'fa-solid fa-tablet-screen-button',
         'Audiobook': 'fa-solid fa-headphones'
       };
-      const icon = iconMap[tipo];
+      return iconMap[tipo] || '';
+    }
+    function renderTipo(tipo) {
+      const icon = getTipoIcon(tipo);
       if (!icon) return tipo || '';
       return `<span class="type-icon"><i class="${icon}"></i><span>${tipo}</span></span>`;
+    }
+    function renderTipoIcon(tipo) {
+      const icon = getTipoIcon(tipo);
+      return icon ? `<span class="cover-icon"><i class="${icon}"></i></span>` : '';
     }
 
     function salvarLivros() { localStorage.setItem('livros', JSON.stringify(livros)); }
@@ -500,9 +521,10 @@
           const isAudio = b.tipo === 'Audiobook';
           const pc = isAudio ? b.lidas : Math.round((b.lidas / b.paginas) * 100);
           const progressText = isAudio ? `${pc}%` : `${b.lidas}/${b.paginas} (${pc}%)`;
-          const cover = b.capa
+          const coverImg = b.capa
             ? `<img src=\"${b.capa}\" alt=\"Capa de ${b.titulo}\">`
             : `<div class=\"cover-placeholder\">${b.titulo}</div>`;
+          const cover = `<div class=\"cover-wrapper\">${coverImg}${renderTipoIcon(b.tipo)}</div>`;
           const badge = metaAnnual.includes(b.id) ? '<div class="meta-badge">META</div>' : '';
           return `
             <div class=\"reading-card\" onclick=\"mostrarHistorico(${b.id},'dashboard')\">
@@ -609,7 +631,7 @@
           const pctCircle = !isCompleted ? `<div class="percent-circle">${pc}%</div>` : '';
           const badge = isCompleted ? '<div class="lido-badge">Lido</div>' : '';
           if (book && book.capa) {
-            slot.innerHTML = `${pctCircle}${badge}<img src="${book.capa}" alt="${book.titulo}">`;
+            slot.innerHTML = `${pctCircle}${badge}<div class="cover-wrapper"><img src="${book.capa}" alt="${book.titulo}">${renderTipoIcon(book.tipo)}</div>`;
             slot.style.padding = '0';
           } else {
             slot.innerHTML = `${pctCircle}${badge}${book ? book.titulo : ''}`;
@@ -796,9 +818,10 @@
       div.className = 'card';
       if (viewMode === 'list') div.classList.add('list');
       div.onclick = () => mostrarHistorico(b.id);
-      const cover = b.capa
+      const coverImg = b.capa
         ? `<img src="${b.capa}" alt="Capa de ${b.titulo}">`
         : `<div class="cover-placeholder">${b.titulo}</div>`;
+      const cover = `<div class="cover-wrapper">${coverImg}${renderTipoIcon(b.tipo)}</div>`;
       const start = b.startDate ? `<p>Início: ${formatDate(b.startDate)}</p>` : '';
       const end = b.endDate ? `<p>Fim: ${formatDate(b.endDate)}</p>` : '';
       const tipoInfo = b.tipo ? `<p>Tipo: ${renderTipo(b.tipo)}</p>` : '';
@@ -868,7 +891,9 @@
     function mostrarHistorico(id, back='biblioteca') {
       const book = livros.find(b => b.id === id);
       document.getElementById('tituloPagina').textContent = 'Histórico';
-      const cover = book.capa ? `<img src="${book.capa}" alt="Capa de ${book.titulo}">` : '';
+      const cover = book.capa
+        ? `<div class="cover-wrapper"><img src="${book.capa}" alt="Capa de ${book.titulo}">${renderTipoIcon(book.tipo)}</div>`
+        : '';
       let html = `
         <div class="card">
           <button onclick="navegar('${back}')" style="background:transparent;color:var(--text-color);border:none;margin-bottom:1rem;display:block;width:auto;padding:0;text-align:left">◀ Voltar</button>
