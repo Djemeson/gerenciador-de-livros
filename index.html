@@ -6,6 +6,7 @@
   <title>Biblioteca Pessoal</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <style>
     :root { --bg-color:#f8fafc; --text-color:#1f2937; --nav-bg:#4f46e5; --card-bg:white; --card-shadow:rgba(0,0,0,0.08); --progress-bg:#e5e7eb; --progress-fill:#4f46e5; }
     [data-theme="dark"] { --bg-color:#0f172a; --text-color:#f1f5f9; --nav-bg:#312e81; --card-bg:#1e293b; --card-shadow:rgba(0,0,0,0.4); --progress-bg:#374151; --progress-fill:#6366f1; }
@@ -159,7 +160,7 @@
     .calendar-day.empty { background:transparent; }
     .card .details p { display:flex; align-items:center; gap:0.25rem; }
     .type-icon { display:inline-flex; align-items:center; gap:0.25rem; }
-    .type-icon .material-symbols-outlined { font-size:1rem; }
+    .type-icon i { font-size:1rem; }
   </style>
 </head>
 <body>
@@ -251,13 +252,13 @@
 
     function renderTipo(tipo) {
       const iconMap = {
-        'Físico': 'menu_book',
-        'E-book': 'tablet_mac',
-        'Audiobook': 'headphones'
+        'Físico': 'fa-solid fa-book',
+        'E-book': 'fa-solid fa-tablet-screen-button',
+        'Audiobook': 'fa-solid fa-headphones'
       };
       const icon = iconMap[tipo];
       if (!icon) return tipo || '';
-      return `<span class="type-icon"><span class="material-symbols-outlined">${icon}</span><span>${tipo}</span></span>`;
+      return `<span class="type-icon"><i class="${icon}"></i><span>${tipo}</span></span>`;
     }
 
     function salvarLivros() { localStorage.setItem('livros', JSON.stringify(livros)); }
