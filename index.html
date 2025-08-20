@@ -28,7 +28,7 @@
     button.primary:hover { background:#4338ca; }
     .history-item { margin-bottom:0.5rem; font-size:0.9rem; }
     .grid { display:grid; gap:1rem; }
-    .grid.small { grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); font-size:0.8rem; }
+    .grid.small { grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); font-size:0.8rem; }
     .grid.medium { grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); }
     .grid.large { grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); }
     .grid .card { margin-bottom:0; }
@@ -37,6 +37,7 @@
     .grid .card img { object-fit:contain; }
     .grid .update-btn { width:100%; }
     .grid.small .update-btn { font-size:0.75rem; }
+    .grid.small .details p { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .view-size { display:flex; gap:0.25rem; }
     .view-size button { background:transparent; border:none; cursor:pointer; padding:0.2rem; border-radius:0.25rem; }
     .view-size button.active { background:var(--progress-bg); }
