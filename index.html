@@ -134,6 +134,8 @@
     .category-group h3 { margin-bottom:0.5rem; border-left:4px solid var(--nav-bg); padding-left:0.5rem; }
 
     /* Calendar widget */
+    .calendar-nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; }
+    .calendar-nav button { width:auto; margin:0; background:transparent; border:none; cursor:pointer; }
     .calendar { display:grid; grid-template-columns:repeat(7,1fr); gap:0.5rem; justify-items:center; }
     .calendar-day { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--progress-bg); color:var(--text-color); }
     .calendar-day.read { background:#16A34A; color:#fff; }
@@ -199,6 +201,9 @@
     let selectingSlot = null;
     let viewMode = localStorage.getItem('viewMode') || 'list';
     let gridSize = localStorage.getItem('gridSize') || 'large';
+    const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    let calendarYear = new Date().getFullYear();
+    let calendarMonth = new Date().getMonth();
     const conteudo = document.getElementById('conteudo');
     document.getElementById('today').textContent = new Date().toLocaleDateString();
     let currentDate = new Date().toISOString().split('T')[0];
@@ -434,7 +439,12 @@
       const calendarCard = `
         <div class=\"card\">
           <h2>Leitura Mensal</h2>
-          ${gerarCalendarioMensal()}
+          <div class=\"calendar-nav\">
+            <button onclick=\"alterarMes(-1)\">&lt;</button>
+            <span id=\"calendar-month\">${monthNames[calendarMonth]} ${calendarYear}</span>
+            <button onclick=\"alterarMes(1)\">&gt;</button>
+          </div>
+          <div id=\"calendar-container\">${gerarCalendarioMensal()}</div>
         </div>`;
       const getLastUpdate = b => {
         if (b.history && b.history.length) {
@@ -490,10 +500,7 @@
       conteudo.innerHTML = html;
     }
 
-    function gerarCalendarioMensal() {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = now.getMonth();
+    function gerarCalendarioMensal(year = calendarYear, month = calendarMonth) {
       const firstDay = new Date(year, month, 1).getDay();
       const daysInMonth = new Date(year, month + 1, 0).getDate();
       const pagesByDate = {};
@@ -520,6 +527,14 @@
       }
       html += '</div>';
       return html;
+    }
+
+    function alterarMes(delta) {
+      calendarMonth += delta;
+      if (calendarMonth < 0) { calendarMonth = 11; calendarYear--; }
+      if (calendarMonth > 11) { calendarMonth = 0; calendarYear++; }
+      document.getElementById('calendar-month').textContent = `${monthNames[calendarMonth]} ${calendarYear}`;
+      document.getElementById('calendar-container').innerHTML = gerarCalendarioMensal();
     }
 
     function carregarMetaAnual() {
