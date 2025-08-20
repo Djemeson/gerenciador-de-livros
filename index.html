@@ -210,6 +210,11 @@
       { id:'reading_marathon', name:'Meta 30 pág/dia', pagesPerDay:30 },
       { id:'weekend_warrior', name:'Meta 50 pág/dia', pagesPerDay:50 }
     ].map(d => ({ ...d, description: `Ler ${d.pagesPerDay} pág/dia` }));
+    const generos = [
+      'Ação','Aventura','Autoajuda','Biografia','Ciência','Conto','Crônica','Didático',
+      'Drama','Fantasia','Ficção científica','História','Humor','Infantil','Poesia',
+      'Religião','Romance','Suspense','Tecnologia','Terror'
+    ];
     let livros = JSON.parse(localStorage.getItem('livros')) || [];
     livros = livros.map(b => {
       const history = b.history || [];
@@ -249,6 +254,20 @@
     let groupType = 'none';
     let selectedCategory = 'all';
     let currentPage = 'dashboard';
+
+    function getGeneroOptions(selected = '') {
+      const list = selected && !generos.includes(selected) ? [...generos, selected] : generos;
+      return list.map(g => `<option value="${g}" ${selected === g ? 'selected' : ''}>${g}</option>`).join('');
+    }
+
+    function filtrarGeneros() {
+      const termo = document.getElementById('genero-search').value.toLowerCase();
+      const select = document.getElementById('genero');
+      Array.from(select.options).forEach(opt => {
+        if (opt.value === '') return;
+        opt.style.display = opt.text.toLowerCase().includes(termo) ? '' : 'none';
+      });
+    }
 
     function renderTipo(tipo) {
       const iconMap = {
@@ -916,7 +935,11 @@
           <input id="titulo" placeholder="Título" />
           <input id="autor" placeholder="Autor" />
           <input id="editora" placeholder="Editora" />
-          <input id="genero" placeholder="Gênero" />
+          <input id="genero-search" placeholder="Buscar gênero" oninput="filtrarGeneros()" />
+          <select id="genero">
+            <option value="" disabled selected>Gênero</option>
+            ${getGeneroOptions()}
+          </select>
           <textarea id="resumo" placeholder="Resumo"></textarea>
           <input id="capa" placeholder="URL da capa" />
           <input id="paginas" type="number" placeholder="Páginas" />
@@ -949,7 +972,19 @@
         document.getElementById('titulo').value = info.title || '';
         document.getElementById('autor').value = info.authors ? info.authors.join(', ') : '';
         document.getElementById('editora').value = info.publisher || '';
-        document.getElementById('genero').value = (info.categories && info.categories[0]) || '';
+        const generoSelect = document.getElementById('genero');
+        const cat = (info.categories && info.categories[0]) || '';
+        if (cat) {
+          if (!generos.includes(cat)) {
+            generos.push(cat);
+            const opt = document.createElement('option');
+            opt.value = cat;
+            opt.textContent = cat;
+            generoSelect.appendChild(opt);
+          }
+          generoSelect.value = cat;
+          filtrarGeneros();
+        }
         document.getElementById('resumo').value = info.description || '';
         document.getElementById('capa').value = (info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail)) || '';
         document.getElementById('paginas').value = info.pageCount || '';
@@ -1031,7 +1066,11 @@
           <input id="titulo" placeholder="Título" value="${book.titulo || ''}" />
           <input id="autor" placeholder="Autor" value="${book.autor || ''}" />
           <input id="editora" placeholder="Editora" value="${book.editora || ''}" />
-          <input id="genero" placeholder="Gênero" value="${book.genero || ''}" />
+          <input id="genero-search" placeholder="Buscar gênero" oninput="filtrarGeneros()" />
+          <select id="genero">
+            <option value="" disabled ${book.genero ? '' : 'selected'}>Gênero</option>
+            ${getGeneroOptions(book.genero || '')}
+          </select>
           <textarea id="resumo" placeholder="Resumo">${book.resumo || ''}</textarea>
           <input id="capa" placeholder="URL da capa" value="${book.capa || ''}" />
           <input id="paginas" type="number" placeholder="Páginas" />
