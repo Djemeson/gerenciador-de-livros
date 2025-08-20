@@ -242,14 +242,19 @@
     let currentDate = getLocalDateISO();
     if (localStorage.getItem('tema')) document.documentElement.setAttribute('data-theme', localStorage.getItem('tema'));
     document.getElementById('book-search').addEventListener('input', e => renderBookList(e.target.value));
-    setInterval(() => {
+    function updateToday() {
       const todayStr = getLocalDateISO();
       if (todayStr !== currentDate) {
         currentDate = todayStr;
         document.getElementById('today').textContent = new Date().toLocaleDateString();
         if (document.getElementById('tituloPagina').textContent === 'Dashboard') carregarDashboard();
       }
-    }, 60 * 1000);
+    }
+    setInterval(updateToday, 60 * 1000);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) updateToday();
+    });
+    window.addEventListener('focus', updateToday);
     let selectedYear = new Date().getFullYear();
     let selectedTab = 'lendo';
     let groupType = 'none';
