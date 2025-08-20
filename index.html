@@ -509,8 +509,8 @@
               ${badge}
               ${cover}
               <div>${progressText}</div>
-              ${b.tipo ? `<div>${renderTipo(b.tipo)}</div>` : ''}
               <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
+              ${b.tipo ? `<div>${renderTipo(b.tipo)}</div>` : ''}
               <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">Atualizar</button>
             </div>
           `;
