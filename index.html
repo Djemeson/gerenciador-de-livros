@@ -212,8 +212,9 @@
     ].map(d => ({ ...d, description: `Ler ${d.pagesPerDay} pág/dia` }));
     const generos = [
       'Ação','Aventura','Autoajuda','Biografia','Ciência','Conto','Crônica','Didático',
-      'Drama','Fantasia','Ficção científica','História','Humor','Infantil','Poesia',
-      'Religião','Romance','Suspense','Tecnologia','Terror'
+      'Distopia','Drama','Esporte','Fantasia','Fábula','Ficção científica','Ficção histórica',
+      'Gastronomia','Guerra','História','Humor','Infantil','Mistério','Negócios','Poesia',
+      'Policial','Religião','Romance','Suspense','Tecnologia','Terror','Viagem'
     ];
     let livros = JSON.parse(localStorage.getItem('livros')) || [];
     livros = livros.map(b => {
@@ -266,6 +267,30 @@
       Array.from(select.options).forEach(opt => {
         if (opt.value === '') return;
         opt.style.display = opt.text.toLowerCase().includes(termo) ? '' : 'none';
+      });
+    }
+
+    function setupGeneroSearch() {
+      const select = document.getElementById('genero');
+      const search = document.getElementById('genero-search');
+      if (!select || !search) return;
+      const hide = () => {
+        search.style.display = 'none';
+        search.value = '';
+        filtrarGeneros();
+      };
+      select.addEventListener('focus', () => {
+        search.style.display = '';
+      });
+      select.addEventListener('blur', () => {
+        setTimeout(() => {
+          if (document.activeElement !== search) hide();
+        }, 100);
+      });
+      search.addEventListener('blur', () => {
+        setTimeout(() => {
+          if (document.activeElement !== select) hide();
+        }, 100);
       });
     }
 
@@ -935,11 +960,11 @@
           <input id="titulo" placeholder="Título" />
           <input id="autor" placeholder="Autor" />
           <input id="editora" placeholder="Editora" />
-          <input id="genero-search" placeholder="Buscar gênero" oninput="filtrarGeneros()" />
           <select id="genero">
             <option value="" disabled selected>Gênero</option>
             ${getGeneroOptions()}
           </select>
+          <input id="genero-search" placeholder="Buscar gênero" oninput="filtrarGeneros()" style="display:none" />
           <textarea id="resumo" placeholder="Resumo"></textarea>
           <input id="capa" placeholder="URL da capa" />
           <input id="paginas" type="number" placeholder="Páginas" />
@@ -959,6 +984,7 @@
         document.getElementById('lidas').style.display = isAudio ? 'none' : '';
         document.getElementById('percent').style.display = isAudio ? '' : 'none';
       });
+      setupGeneroSearch();
     }
 
     async function buscarISBN() {
@@ -1066,11 +1092,11 @@
           <input id="titulo" placeholder="Título" value="${book.titulo || ''}" />
           <input id="autor" placeholder="Autor" value="${book.autor || ''}" />
           <input id="editora" placeholder="Editora" value="${book.editora || ''}" />
-          <input id="genero-search" placeholder="Buscar gênero" oninput="filtrarGeneros()" />
           <select id="genero">
             <option value="" disabled ${book.genero ? '' : 'selected'}>Gênero</option>
             ${getGeneroOptions(book.genero || '')}
           </select>
+          <input id="genero-search" placeholder="Buscar gênero" oninput="filtrarGeneros()" style="display:none" />
           <textarea id="resumo" placeholder="Resumo">${book.resumo || ''}</textarea>
           <input id="capa" placeholder="URL da capa" value="${book.capa || ''}" />
           <input id="paginas" type="number" placeholder="Páginas" />
@@ -1100,6 +1126,7 @@
       tipoEl.addEventListener('change', e => toggleFields(e.target.value));
       tipoEl.value = book.tipo || '';
       toggleFields(tipoEl.value);
+      setupGeneroSearch();
     }
 
     function salvarEdicao(id, back = 'biblioteca') {
