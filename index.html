@@ -205,12 +205,18 @@
     let calendarYear = new Date().getFullYear();
     let calendarMonth = new Date().getMonth();
     const conteudo = document.getElementById('conteudo');
+
+    function getLocalDateISO(date = new Date()) {
+      const tzOffset = date.getTimezoneOffset() * 60000;
+      return new Date(date.getTime() - tzOffset).toISOString().split('T')[0];
+    }
+
     document.getElementById('today').textContent = new Date().toLocaleDateString();
-    let currentDate = new Date().toISOString().split('T')[0];
+    let currentDate = getLocalDateISO();
     if (localStorage.getItem('tema')) document.documentElement.setAttribute('data-theme', localStorage.getItem('tema'));
     document.getElementById('book-search').addEventListener('input', e => renderBookList(e.target.value));
     setInterval(() => {
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = getLocalDateISO();
       if (todayStr !== currentDate) {
         currentDate = todayStr;
         document.getElementById('today').textContent = new Date().toLocaleDateString();
@@ -308,7 +314,7 @@
       modalBack = currentPage;
       currentEditId = id;
       const book = livros.find(b => b.id === id);
-      document.getElementById('modal-date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('modal-date').value = getLocalDateISO();
       const typeSelect = document.getElementById('modal-type');
       if (book.tipo === 'Audiobook') {
         typeSelect.value = 'percent';
@@ -382,9 +388,9 @@
 
     function carregarDashboard() {
       const hoje = new Date();
-      const hojeStr = hoje.toISOString().split('T')[0];
+      const hojeStr = getLocalDateISO(hoje);
       const weekAgo = new Date(hoje); weekAgo.setDate(hoje.getDate() - 6);
-      const weekAgoStr = weekAgo.toISOString().split('T')[0];
+      const weekAgoStr = getLocalDateISO(weekAgo);
       let daily = 0, weekly = 0;
       livros.forEach(b => b.history.forEach(h => {
         const pages = h.delta || 0;
@@ -962,7 +968,7 @@
       else if (ld > 0) { status = 'lendo'; }
       const book = { id: Date.now(), titulo: t, autor: a, editora: e, categoria: cat, resumo: r, isbn, paginas: pg, lidas: ld, capa: c, tipo: tp, history: [], status, year, completedYear, startDate: null, endDate: null };
       if (ld > 0) {
-        const date = new Date().toISOString().split('T')[0];
+        const date = getLocalDateISO();
         const pct  = Math.round((ld/pg)*100);
         book.history.push({ date, pages: ld, percent: pct, delta: ld, timestamp: Date.now() });
         book.startDate = date;
