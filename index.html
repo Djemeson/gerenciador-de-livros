@@ -751,14 +751,17 @@
         div.style = 'display:flex; gap:0.5rem; align-items:center;';
         const groupOpts = [
           `<option value="none" ${groupType==='none'?'selected':''}>---</option>`,
-          `<option value="genero" ${groupType==='genero'?'selected':''}>Gênero</option>`
+          `<option value="genero" ${groupType==='genero'?'selected':''}>Gênero</option>`,
+          `<option value="tipo" ${groupType==='tipo'?'selected':''}>Tipo</option>`
         ].join('');
         let html = `Agrupar <select style="width:auto" onchange="setGroupType(this.value)">${groupOpts}</select>`;
-        if (groupType === 'genero') {
+        if (groupType === 'genero' || groupType === 'tipo') {
           const status = selectedTab === 'lendo' ? 'lendo' : 'quero_ler';
+          const prop = groupType === 'genero' ? 'categoria' : 'tipo';
+          const emptyLabel = groupType === 'genero' ? 'Sem categoria' : 'Sem tipo';
           const categories = Array.from(new Set(livros
             .filter(b => b.status === status && b.year === cy)
-            .map(b => b.categoria || 'Sem categoria'))).sort();
+            .map(b => b[prop] || emptyLabel))).sort();
           const opts = ['<option value="all">Todos</option>', ...categories.map(c => `<option value="${c}" ${selectedCategory===c?'selected':''}>${c}</option>`)].join('');
           html += ` <span>Filtrar</span> <select style="width:auto" onchange="setCategoryFilter(this.value)">${opts}</select>`;
         }
@@ -830,27 +833,30 @@
       } else {
         list = livros.filter(b => b.status==='lido' && b.completedYear===selectedYear);
       }
-      if (groupType === 'genero' && selectedCategory !== 'all') {
-        list = list.filter(b => (b.categoria || 'Sem categoria') === selectedCategory);
+      if (groupType !== 'none' && selectedCategory !== 'all') {
+        list = list.filter(b => {
+          const prop = groupType === 'genero' ? (b.categoria || 'Sem categoria') : (b.tipo || 'Sem tipo');
+          return prop === selectedCategory;
+        });
       }
       if (!list.length) { container.innerHTML = '<p>Nenhum livro.</p>'; return; }
-      if (groupType === 'genero' && (selectedTab === 'lendo' || selectedTab === 'quero')) {
+      if (groupType !== 'none' && (selectedTab === 'lendo' || selectedTab === 'quero')) {
         container.className = '';
         const groups = {};
         list.forEach(b => {
-          const cat = b.categoria || 'Sem categoria';
-          (groups[cat] = groups[cat] || []).push(b);
+          const key = groupType === 'genero' ? (b.categoria || 'Sem categoria') : (b.tipo || 'Sem tipo');
+          (groups[key] = groups[key] || []).push(b);
         });
-        Object.keys(groups).sort().forEach(cat => {
+        Object.keys(groups).sort().forEach(key => {
           const groupDiv = document.createElement('div');
           groupDiv.className = 'category-group';
           const h = document.createElement('h3');
-          h.textContent = cat;
+          if (groupType === 'tipo') h.innerHTML = renderTipo(key); else h.textContent = key;
           groupDiv.appendChild(h);
           const booksDiv = document.createElement('div');
           if (viewMode === 'grid') booksDiv.className = 'grid ' + gridSize;
           groupDiv.appendChild(booksDiv);
-          groups[cat].forEach(b => appendBookCard(booksDiv, b));
+          groups[key].forEach(b => appendBookCard(booksDiv, b));
           container.appendChild(groupDiv);
         });
       } else {
