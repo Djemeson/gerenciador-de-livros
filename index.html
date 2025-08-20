@@ -91,6 +91,22 @@
       top:0;
       background:#16A34A;
     }
+    .percent-circle {
+      position:absolute;
+      top:0.25rem;
+      left:0.25rem;
+      width:24px;
+      height:24px;
+      border-radius:50%;
+      background:#FACC15;
+      color:#000;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:0.7rem;
+      font-weight:700;
+      z-index:3;
+    }
     .history-layout { display:flex; gap:6rem; align-items:flex-start; }
     .history-layout img { width:120px; height:180px; object-fit:cover; border-radius:0.25rem; }
     .history-info { display:flex; gap:1rem; align-items:flex-start; }
@@ -572,12 +588,14 @@
         if (id) {
           const book = livros.find(b => b.id === id);
           slot.className = 'goal-slot filled';
+          const pc = book ? (book.tipo === 'Audiobook' ? book.lidas : Math.round((book.lidas / book.paginas) * 100)) : 0;
+          const pctCircle = `<div class="percent-circle">${pc}%</div>`;
           const badge = book && book.lidas >= book.paginas ? '<div class="lido-badge">Lido</div>' : '';
           if (book && book.capa) {
-            slot.innerHTML = `${badge}<img src="${book.capa}" alt="${book.titulo}">`;
+            slot.innerHTML = `${pctCircle}${badge}<img src="${book.capa}" alt="${book.titulo}">`;
             slot.style.padding = '0';
           } else {
-            slot.innerHTML = `${badge}${book ? book.titulo : ''}`;
+            slot.innerHTML = `${pctCircle}${badge}${book ? book.titulo : ''}`;
             slot.style.padding = '';
           }
           slot.onclick = () => openSlotOptions(i);
