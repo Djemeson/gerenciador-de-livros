@@ -256,43 +256,25 @@
     let selectedCategory = 'all';
     let currentPage = 'dashboard';
 
-    function getGeneroOptions(selected = '') {
-      const list = selected && !generos.includes(selected) ? [...generos, selected] : generos;
-      return list.map(g => `<option value="${g}" ${selected === g ? 'selected' : ''}>${g}</option>`).join('');
-    }
+      function getGeneroOptions(filter = '', selected = '') {
+        let list = generos;
+        if (selected && !generos.includes(selected)) list = [...generos, selected];
+        return list
+          .filter(g => g.toLowerCase().includes(filter.toLowerCase()))
+          .map(g => `<option value="${g}"></option>`).join('');
+      }
 
-    function filtrarGeneros() {
-      const termo = document.getElementById('genero-search').value.toLowerCase();
-      const select = document.getElementById('genero');
-      Array.from(select.options).forEach(opt => {
-        if (opt.value === '') return;
-        opt.style.display = opt.text.toLowerCase().includes(termo) ? '' : 'none';
-      });
-    }
-
-    function setupGeneroSearch() {
-      const select = document.getElementById('genero');
-      const search = document.getElementById('genero-search');
-      if (!select || !search) return;
-      const hide = () => {
-        search.style.display = 'none';
-        search.value = '';
-        filtrarGeneros();
-      };
-      select.addEventListener('focus', () => {
-        search.style.display = '';
-      });
-      select.addEventListener('blur', () => {
-        setTimeout(() => {
-          if (document.activeElement !== search) hide();
-        }, 100);
-      });
-      search.addEventListener('blur', () => {
-        setTimeout(() => {
-          if (document.activeElement !== select) hide();
-        }, 100);
-      });
-    }
+      function setupGeneroInput(selected = '') {
+        const input = document.getElementById('genero');
+        const datalist = document.getElementById('genero-list');
+        if (!input || !datalist) return;
+        const update = (val = '') => {
+          datalist.innerHTML = getGeneroOptions(val, selected);
+        };
+        update('');
+        input.oninput = e => update(e.target.value);
+        if (selected) input.value = selected;
+      }
 
     function renderTipo(tipo) {
       const iconMap = {
@@ -960,11 +942,10 @@
           <input id="titulo" placeholder="Título" />
           <input id="autor" placeholder="Autor" />
           <input id="editora" placeholder="Editora" />
-          <select id="genero">
-            <option value="" disabled selected>Gênero</option>
-            ${getGeneroOptions()}
-          </select>
-          <input id="genero-search" placeholder="Buscar gênero" oninput="filtrarGeneros()" style="display:none" />
+            <input id="genero" list="genero-list" placeholder="Gênero" />
+            <datalist id="genero-list">
+              ${getGeneroOptions()}
+            </datalist>
           <textarea id="resumo" placeholder="Resumo"></textarea>
           <input id="capa" placeholder="URL da capa" />
           <input id="paginas" type="number" placeholder="Páginas" />
@@ -978,14 +959,14 @@
           </select>
           <button class="primary" onclick="adicionarLivro()">Salvar</button>
         </div>`;
-      document.getElementById('tipo').addEventListener('change', e => {
+        document.getElementById('tipo').addEventListener('change', e => {
         const isAudio = e.target.value === 'Audiobook';
         document.getElementById('paginas').style.display = isAudio ? 'none' : '';
         document.getElementById('lidas').style.display = isAudio ? 'none' : '';
         document.getElementById('percent').style.display = isAudio ? '' : 'none';
       });
-      setupGeneroSearch();
-    }
+        setupGeneroInput();
+      }
 
     async function buscarISBN() {
       const isbn = document.getElementById('isbn').value.trim();
@@ -998,18 +979,12 @@
         document.getElementById('titulo').value = info.title || '';
         document.getElementById('autor').value = info.authors ? info.authors.join(', ') : '';
         document.getElementById('editora').value = info.publisher || '';
-        const generoSelect = document.getElementById('genero');
+        const generoInput = document.getElementById('genero');
         const cat = (info.categories && info.categories[0]) || '';
         if (cat) {
-          if (!generos.includes(cat)) {
-            generos.push(cat);
-            const opt = document.createElement('option');
-            opt.value = cat;
-            opt.textContent = cat;
-            generoSelect.appendChild(opt);
-          }
-          generoSelect.value = cat;
-          filtrarGeneros();
+          if (!generos.includes(cat)) generos.push(cat);
+          setupGeneroInput(cat);
+          generoInput.value = cat;
         }
         document.getElementById('resumo').value = info.description || '';
         document.getElementById('capa').value = (info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail)) || '';
@@ -1092,11 +1067,10 @@
           <input id="titulo" placeholder="Título" value="${book.titulo || ''}" />
           <input id="autor" placeholder="Autor" value="${book.autor || ''}" />
           <input id="editora" placeholder="Editora" value="${book.editora || ''}" />
-          <select id="genero">
-            <option value="" disabled ${book.genero ? '' : 'selected'}>Gênero</option>
-            ${getGeneroOptions(book.genero || '')}
-          </select>
-          <input id="genero-search" placeholder="Buscar gênero" oninput="filtrarGeneros()" style="display:none" />
+            <input id="genero" list="genero-list" placeholder="Gênero" value="${book.genero || ''}" />
+            <datalist id="genero-list">
+              ${getGeneroOptions('', book.genero || '')}
+            </datalist>
           <textarea id="resumo" placeholder="Resumo">${book.resumo || ''}</textarea>
           <input id="capa" placeholder="URL da capa" value="${book.capa || ''}" />
           <input id="paginas" type="number" placeholder="Páginas" />
@@ -1126,8 +1100,8 @@
       tipoEl.addEventListener('change', e => toggleFields(e.target.value));
       tipoEl.value = book.tipo || '';
       toggleFields(tipoEl.value);
-      setupGeneroSearch();
-    }
+        setupGeneroInput(book.genero || '');
+      }
 
     function salvarEdicao(id, back = 'biblioteca') {
       const isbn = document.getElementById('isbn').value;
