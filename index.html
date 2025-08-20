@@ -157,6 +157,9 @@
     .calendar-day { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--progress-bg); color:var(--text-color); }
     .calendar-day.read { background:#16A34A; color:#fff; }
     .calendar-day.empty { background:transparent; }
+    .card .details p { display:flex; align-items:center; gap:0.25rem; }
+    .type-icon { display:inline-flex; align-items:center; gap:0.25rem; }
+    .type-icon .material-symbols-outlined { font-size:1rem; }
   </style>
 </head>
 <body>
@@ -245,6 +248,17 @@
     let groupType = 'none';
     let selectedCategory = 'all';
     let currentPage = 'dashboard';
+
+    function renderTipo(tipo) {
+      const iconMap = {
+        'Físico': 'menu_book',
+        'E-book': 'tablet_mac',
+        'Audiobook': 'headphones'
+      };
+      const icon = iconMap[tipo];
+      if (!icon) return tipo || '';
+      return `<span class="type-icon"><span class="material-symbols-outlined">${icon}</span><span>${tipo}</span></span>`;
+    }
 
     function salvarLivros() { localStorage.setItem('livros', JSON.stringify(livros)); }
     function formatDate(dateStr) {
@@ -494,7 +508,7 @@
               ${badge}
               ${cover}
               <div>${progressText}</div>
-              ${b.tipo ? `<div>${b.tipo}</div>` : ''}
+              ${b.tipo ? `<div>${renderTipo(b.tipo)}</div>` : ''}
               <div class="progress-bar"><div class="progress-fill" style="width:${pc}%"></div></div>
               <button class="update-btn" onclick="event.stopPropagation();showModal(${b.id});">Atualizar</button>
             </div>
@@ -783,7 +797,7 @@
         : `<div class="cover-placeholder">${b.titulo}</div>`;
       const start = b.startDate ? `<p>Início: ${formatDate(b.startDate)}</p>` : '';
       const end = b.endDate ? `<p>Fim: ${formatDate(b.endDate)}</p>` : '';
-      const tipoInfo = b.tipo ? `<p>Tipo: ${b.tipo}</p>` : '';
+      const tipoInfo = b.tipo ? `<p>Tipo: ${renderTipo(b.tipo)}</p>` : '';
       const updateTxt = (viewMode === 'grid' && gridSize === 'small') ? 'Atualizar' : 'Atualizar progresso';
       const progressText = isAudio ? `${pc}%` : `${b.lidas}/${b.paginas} (${pc}%)`;
       div.innerHTML = `
@@ -860,7 +874,7 @@
                 ${book.editora ? `<p><strong>Editora:</strong> ${book.editora}</p>` : ''}
                 ${book.categoria ? `<p><strong>Categoria:</strong> ${book.categoria}</p>` : ''}
                 ${book.isbn ? `<p><strong>ISBN:</strong> ${book.isbn}</p>` : ''}
-                ${book.tipo ? `<p><strong>Tipo:</strong> ${book.tipo}</p>` : ''}
+                ${book.tipo ? `<p><strong>Tipo:</strong> ${renderTipo(book.tipo)}</p>` : ''}
                 ${book.startDate ? `<p><strong>Início:</strong> ${formatDate(book.startDate)}</p>` : ''}
                 ${book.endDate ? `<p><strong>Fim:</strong> ${formatDate(book.endDate)}</p>` : ''}
               </div>
