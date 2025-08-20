@@ -215,7 +215,7 @@
       const history = b.history || [];
       const startDate = b.startDate || (history.length ? history[0].date : null);
       const endDate = b.endDate || (b.status === 'lido' && history.length ? history[history.length - 1].date : null);
-      return { ...b, history, resumo: b.resumo || '', categoria: b.categoria || '', startDate, endDate };
+      return { ...b, history, resumo: b.resumo || '', genero: b.genero || b.categoria || '', startDate, endDate };
     });
     let metaAnnual = JSON.parse(localStorage.getItem('metaAnnual')) || [];
     let metaAnnualCount = parseInt(localStorage.getItem('metaAnnualCount')) || metaAnnual.length;
@@ -757,8 +757,8 @@
         let html = `Agrupar <select style="width:auto" onchange="setGroupType(this.value)">${groupOpts}</select>`;
         if (groupType === 'genero' || groupType === 'tipo') {
           const status = selectedTab === 'lendo' ? 'lendo' : 'quero_ler';
-          const prop = groupType === 'genero' ? 'categoria' : 'tipo';
-          const emptyLabel = groupType === 'genero' ? 'Sem categoria' : 'Sem tipo';
+          const prop = groupType === 'genero' ? 'genero' : 'tipo';
+          const emptyLabel = groupType === 'genero' ? 'Sem gênero' : 'Sem tipo';
           const categories = Array.from(new Set(livros
             .filter(b => b.status === status && b.year === cy)
             .map(b => b[prop] || emptyLabel))).sort();
@@ -835,7 +835,7 @@
       }
       if (groupType !== 'none' && selectedCategory !== 'all') {
         list = list.filter(b => {
-          const prop = groupType === 'genero' ? (b.categoria || 'Sem categoria') : (b.tipo || 'Sem tipo');
+          const prop = groupType === 'genero' ? (b.genero || 'Sem gênero') : (b.tipo || 'Sem tipo');
           return prop === selectedCategory;
         });
       }
@@ -844,7 +844,7 @@
         container.className = '';
         const groups = {};
         list.forEach(b => {
-          const key = groupType === 'genero' ? (b.categoria || 'Sem categoria') : (b.tipo || 'Sem tipo');
+          const key = groupType === 'genero' ? (b.genero || 'Sem gênero') : (b.tipo || 'Sem tipo');
           (groups[key] = groups[key] || []).push(b);
         });
         Object.keys(groups).sort().forEach(key => {
@@ -879,7 +879,7 @@
                 <h2>${book.titulo}</h2>
                 ${book.autor ? `<p><strong>Autor:</strong> ${book.autor}</p>` : ''}
                 ${book.editora ? `<p><strong>Editora:</strong> ${book.editora}</p>` : ''}
-                ${book.categoria ? `<p><strong>Categoria:</strong> ${book.categoria}</p>` : ''}
+                ${book.genero ? `<p><strong>Gênero:</strong> ${book.genero}</p>` : ''}
                 ${book.isbn ? `<p><strong>ISBN:</strong> ${book.isbn}</p>` : ''}
                 ${book.tipo ? `<p><strong>Tipo:</strong> ${renderTipo(book.tipo)}</p>` : ''}
                 ${book.startDate ? `<p><strong>Início:</strong> ${formatDate(book.startDate)}</p>` : ''}
@@ -916,7 +916,7 @@
           <input id="titulo" placeholder="Título" />
           <input id="autor" placeholder="Autor" />
           <input id="editora" placeholder="Editora" />
-          <input id="categoria" placeholder="Categoria" />
+          <input id="genero" placeholder="Gênero" />
           <textarea id="resumo" placeholder="Resumo"></textarea>
           <input id="capa" placeholder="URL da capa" />
           <input id="paginas" type="number" placeholder="Páginas" />
@@ -949,7 +949,7 @@
         document.getElementById('titulo').value = info.title || '';
         document.getElementById('autor').value = info.authors ? info.authors.join(', ') : '';
         document.getElementById('editora').value = info.publisher || '';
-        document.getElementById('categoria').value = (info.categories && info.categories[0]) || '';
+        document.getElementById('genero').value = (info.categories && info.categories[0]) || '';
         document.getElementById('resumo').value = info.description || '';
         document.getElementById('capa').value = (info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail)) || '';
         document.getElementById('paginas').value = info.pageCount || '';
@@ -992,7 +992,7 @@
       const t = document.getElementById('titulo').value;
       const a = document.getElementById('autor').value;
       const e = document.getElementById('editora').value;
-      const cat = document.getElementById('categoria').value;
+      const gen = document.getElementById('genero').value;
       const r = document.getElementById('resumo').value;
       const c = document.getElementById('capa').value;
       let pg = parseInt(document.getElementById('paginas').value);
@@ -1007,7 +1007,7 @@
       let status = 'quero_ler', year = cy, completedYear = null;
       if (ld >= pg) { status = 'lido'; completedYear = cy; }
       else if (ld > 0) { status = 'lendo'; }
-      const book = { id: Date.now(), titulo: t, autor: a, editora: e, categoria: cat, resumo: r, isbn, paginas: pg, lidas: ld, capa: c, tipo: tp, history: [], status, year, completedYear, startDate: null, endDate: null };
+      const book = { id: Date.now(), titulo: t, autor: a, editora: e, genero: gen, resumo: r, isbn, paginas: pg, lidas: ld, capa: c, tipo: tp, history: [], status, year, completedYear, startDate: null, endDate: null };
       if (ld > 0) {
         const date = getLocalDateISO();
         const pct  = Math.round((ld/pg)*100);
@@ -1031,7 +1031,7 @@
           <input id="titulo" placeholder="Título" value="${book.titulo || ''}" />
           <input id="autor" placeholder="Autor" value="${book.autor || ''}" />
           <input id="editora" placeholder="Editora" value="${book.editora || ''}" />
-          <input id="categoria" placeholder="Categoria" value="${book.categoria || ''}" />
+          <input id="genero" placeholder="Gênero" value="${book.genero || ''}" />
           <textarea id="resumo" placeholder="Resumo">${book.resumo || ''}</textarea>
           <input id="capa" placeholder="URL da capa" value="${book.capa || ''}" />
           <input id="paginas" type="number" placeholder="Páginas" />
@@ -1068,7 +1068,7 @@
       const t = document.getElementById('titulo').value;
       const a = document.getElementById('autor').value;
       const e = document.getElementById('editora').value;
-      const cat = document.getElementById('categoria').value;
+      const gen = document.getElementById('genero').value;
       const r = document.getElementById('resumo').value;
       const c = document.getElementById('capa').value;
       let pg = parseInt(document.getElementById('paginas').value);
@@ -1084,7 +1084,7 @@
       book.titulo = t;
       book.autor = a;
       book.editora = e;
-      book.categoria = cat;
+      book.genero = gen;
       book.resumo = r;
       book.capa = c;
       book.paginas = pg;
