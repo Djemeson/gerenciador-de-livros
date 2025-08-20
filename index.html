@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Biblioteca Pessoal</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <style>
@@ -42,7 +41,8 @@
     .view-size { display:flex; gap:0.25rem; }
     .view-size button { background:transparent; border:none; cursor:pointer; padding:0.2rem; border-radius:0.25rem; }
     .view-size button.active { background:var(--progress-bg); }
-    .view-size .material-symbols-outlined { font-size:16px; color:var(--text-color); }
+    .view-size i { font-size:16px; color:var(--text-color); }
+    .view-toggle i { color:var(--text-color); }
     .card.list { display:flex; align-items:center; gap:0.5rem; }
     .card.list img { width:50px; height:75px; margin-bottom:0; }
     .card.list .details { flex:1; }
@@ -201,7 +201,7 @@
   <div id="slot-options-overlay" onclick="closeSlotOptions()">
     <div id="slot-options" onclick="event.stopPropagation()">
       <button id="slot-view" title="Exibir">Exibir</button>
-      <button id="slot-remove" title="Remover">🗑️</button>
+      <button id="slot-remove" title="Remover"><i class="fa-solid fa-trash"></i></button>
     </div>
   </div>
   <script>
@@ -311,13 +311,13 @@
       div.className = 'view-size';
       div.innerHTML = `
         <button class="${gridSize==='small'?'active':''}" onclick="setGridSize('small')" title="Pequeno">
-          <span class="material-symbols-outlined">grid_view</span>
+          <i class="fa-solid fa-grip"></i>
         </button>
         <button class="${gridSize==='medium'?'active':''}" onclick="setGridSize('medium')" title="Médio">
-          <span class="material-symbols-outlined">view_module</span>
+          <i class="fa-solid fa-table-cells"></i>
         </button>
         <button class="${gridSize==='large'?'active':''}" onclick="setGridSize('large')" title="Grande">
-          <span class="material-symbols-outlined">view_comfy</span>
+          <i class="fa-solid fa-table-cells-large"></i>
         </button>
       `;
     }
@@ -690,8 +690,8 @@
         <select id="yearSelect" class="year-select" onchange="changeYear(this.value)"></select>
         <div class="view-toggle">
           <div class="view-mode">
-            <button data-mode="list" class="${viewMode==='list'?'active':''}" onclick="setViewMode('list')" title="Lista"><span class="material-symbols-outlined">view_list</span></button>
-            <button data-mode="grid" class="${viewMode==='grid'?'active':''}" onclick="setViewMode('grid')" title="Grade"><span class="material-symbols-outlined">grid_view</span></button>
+            <button data-mode="list" class="${viewMode==='list'?'active':''}" onclick="setViewMode('list')" title="Lista"><i class="fa-solid fa-list"></i></button>
+            <button data-mode="grid" class="${viewMode==='grid'?'active':''}" onclick="setViewMode('grid')" title="Grade"><i class="fa-solid fa-grip"></i></button>
           </div>
           <div id="sizeOptions"></div>
         </div>`;
